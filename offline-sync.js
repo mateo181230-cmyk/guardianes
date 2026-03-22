@@ -7,6 +7,7 @@ const DB_NAME = 'guardianes-offline-db';
 const DB_VERSION = 1;
 const STORE_NAME = 'pending-actions';
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB límite
+let isSyncing = false;
 
 // ============================================================
 // 1. INICIALIZAR IndexedDB
@@ -101,65 +102,74 @@ async function deleteAction(id) {
 // ============================================================
 async function syncPendingActions() {
     if (!navigator.onLine) return;
+    if (isSyncing) {
+        console.log('[OfflineSync] Sincronización ya en curso, omitiendo.');
+        return;
+    }
+    isSyncing = true;
 
-    const pending = await getPendingActions();
-    if (pending.length === 0) return;
+    try {
+        const pending = await getPendingActions();
+        if (pending.length === 0) {
+            updateSyncBadge(0, false);
+            return;
+        }
 
-    console.log(`[OfflineSync] Sincronizando ${pending.length} acciones pendientes...`);
-    updateSyncBadge(pending.length, true);
+        console.log(`[OfflineSync] Sincronizando ${pending.length} acciones...`);
+        updateSyncBadge(pending.length, true);
 
-    let syncedCount = 0;
+        let syncedCount = 0;
 
-    for (const action of pending) {
-        try {
-            let evidenceUrl = null;
+        for (const action of pending) {
+            try {
+                let evidenceUrl = null;
 
-            // Subir archivo si existe
-            if (action.fileBlob && action.fileName) {
-                const fileName = `${action.userId}-${Date.now()}-${action.fileName}`;
-                const file = new File([action.fileBlob], action.fileName, { type: action.fileType });
+                if (action.fileBlob && action.fileName) {
+                    const fileName = `${action.userId}-${Date.now()}-${action.fileName}`;
+                    const file = new File([action.fileBlob], action.fileName, { type: action.fileType });
 
-                const { error: uploadError } = await window.supabaseApp.storage
-                    .from('evidences')
-                    .upload(fileName, file);
+                    const { error: uploadError } = await window.supabaseApp.storage
+                        .from('evidences')
+                        .upload(fileName, file);
 
-                if (uploadError) {
-                    console.error('[OfflineSync] Error subiendo archivo:', uploadError);
+                    if (uploadError) {
+                        console.error('[OfflineSync] Error subiendo archivo:', uploadError);
+                        continue;
+                    }
+
+                    const { data } = window.supabaseApp.storage.from('evidences').getPublicUrl(fileName);
+                    evidenceUrl = data.publicUrl;
+                }
+
+                const { error: insertError } = await window.supabaseApp.from('acciones').insert({
+                    codigo_voluntario: action.userId,
+                    tipo: action.tipo,
+                    puntos: action.puntos,
+                    evidencia_url: evidenceUrl
+                });
+
+                if (insertError) {
+                    console.error('[OfflineSync] Error insertando acción:', insertError);
                     continue;
                 }
 
-                const { data } = window.supabaseApp.storage.from('evidences').getPublicUrl(fileName);
-                evidenceUrl = data.publicUrl;
+                await deleteAction(action.id);
+                syncedCount++;
+                console.log(`[OfflineSync] Sincronizada: ${action.tipo} (+${action.puntos} pts)`);
+            } catch (error) {
+                console.error('[OfflineSync] Error en acción:', error);
             }
-
-            // Insertar registro en tabla acciones
-            const { error: insertError } = await window.supabaseApp.from('acciones').insert({
-                codigo_voluntario: action.userId,
-                tipo: action.tipo,
-                puntos: action.puntos,
-                evidencia_url: evidenceUrl
-            });
-
-            if (insertError) {
-                console.error('[OfflineSync] Error insertando acción:', insertError);
-                continue;
-            }
-
-            await deleteAction(action.id);
-            syncedCount++;
-            console.log(`[OfflineSync] Acción sincronizada: ${action.tipo} (+${action.puntos} pts)`);
-
-        } catch (error) {
-            console.error('[OfflineSync] Error sincronizando acción:', error);
         }
-    }
 
-    const remaining = await getPendingActions();
-    updateSyncBadge(remaining.length, false);
+        const remaining = await getPendingActions();
+        updateSyncBadge(remaining.length, false);
 
-    if (syncedCount > 0) {
-        showSyncToast(`✅ ${syncedCount} acción(es) sincronizada(s) exitosamente`);
-        if (typeof cargarFeed === 'function') cargarFeed();
+        if (syncedCount > 0) {
+            showSyncToast(`✅ ${syncedCount} acción(es) sincronizada(s)`);
+            if (typeof cargarFeed === 'function') cargarFeed();
+        }
+    } finally {
+        isSyncing = false;
     }
 }
 

@@ -865,6 +865,15 @@
                 async function loadSession() {
                     const { data: { session } } = await supabaseApp.auth.getSession();
                     currentUser = session?.user || null;
+                    if (currentUser) {
+                        localStorage.setItem('user_id', currentUser.id);
+                    } else {
+                        // Si no hay sesión, intentamos recuperar el ID guardado
+                        const storedUserId = localStorage.getItem('user_id');
+                        if (storedUserId) {
+                            currentUser = { id: storedUserId };
+                        }
+                    }
                 }
 
                 async function cargarFeed() {
@@ -941,18 +950,48 @@
 
                 // ==================== ABRIR MODAL REGISTRO ====================
                 async function registrarAccion() {
-                    const { data: { user } } = await supabaseApp.auth.getUser();
-                    const { data: perfil, error } = await supabaseApp
-                        .from('voluntarios')
-                        .select('*')
-                        .eq('id', user.id)
-                        .single();
+                    let perfil = null;
 
+                    // 1. Intentar obtener datos en línea
+                    if (navigator.onLine) {
+                        const { data: { user } } = await supabaseApp.auth.getUser();
+                        if (user) {
+                            const { data: profile } = await supabaseApp
+                                .from('voluntarios')
+                                .select('*')
+                                .eq('id', user.id)
+                                .single();
+                            if (profile) {
+                                perfil = profile;
+                                // Guardar en localStorage para uso offline
+                                localStorage.setItem('perfil_voluntario', JSON.stringify(profile));
+                                localStorage.setItem('user_id', user.id);
+                                // Actualizar currentUser
+                                currentUser = { id: user.id };
+                            }
+                        }
+                    }
+
+                    // 2. Si no se obtuvo en línea (offline o error), usar almacenamiento local
+                    if (!perfil) {
+                        const storedPerfil = localStorage.getItem('perfil_voluntario');
+                        if (storedPerfil) {
+                            perfil = JSON.parse(storedPerfil);
+                            const storedUserId = localStorage.getItem('user_id');
+                            if (storedUserId) {
+                                currentUser = { id: storedUserId };
+                            }
+                        }
+                    }
+
+                    // 3. Abrir modal si hay datos, sino mostrar error
                     if (perfil) {
                         const modal = document.getElementById('modalRegistro');
                         const infoDisplay = document.getElementById('infoUsuario');
                         infoDisplay.innerHTML = `<i class="fa-solid fa-user-check mr-2"></i> ${perfil.nombre} (${perfil.departamento})`;
                         modal.classList.remove('hidden');
+                    } else {
+                        alert('No se pudo obtener tu información de usuario. Conéctate a internet para sincronizar.');
                     }
                 }
 
@@ -962,7 +1001,15 @@
 
                 // ==================== CONFIRMAR REGISTRO + GUARDAR EN STORAGE (CON SOPORTE OFFLINE) ====================
                 async function confirmarRegistro() {
-                    if (!currentUser) return alert('Debes iniciar sesión');
+                    // Asegurar que tenemos un user ID (desde currentUser o localStorage)
+                    let userId = currentUser?.id;
+                    if (!userId) {
+                        userId = localStorage.getItem('user_id');
+                    }
+                    if (!userId) {
+                        alert('Debes iniciar sesión');
+                        return;
+                    }
 
                     const valor = document.getElementById('selectAccion').value;
                     const archivo = document.getElementById('archivoEvidencia').files[0];
@@ -990,7 +1037,7 @@
                             }
 
                             await saveActionOffline({
-                                userId: currentUser.id,
+                                userId: userId,
                                 tipo: nombreAccion,
                                 puntos: puntosSumados,
                                 fileName: archivo ? archivo.name : null,
@@ -1001,7 +1048,6 @@
                             alert(`📱 Sin internet — tu acción "${nombreAccion}" (+${puntosSumados} pts) fue guardada y se enviará automáticamente cuando vuelvas a tener conexión.`);
                             cerrarModalRegistro();
 
-                            // Actualizar badge de pendientes
                             const pending = await getPendingActions();
                             updateSyncBadge(pending.length, false);
                         } catch (e) {
@@ -1014,7 +1060,7 @@
                     let evidenceUrl = null;
                     if (archivo) {
                         try {
-                            const fileName = `${currentUser.id}-${Date.now()}-${archivo.name}`;
+                            const fileName = `${userId}-${Date.now()}-${archivo.name}`;
                             const { error: uploadError } = await supabaseApp.storage
                                 .from('evidences')
                                 .upload(fileName, archivo);
@@ -1024,11 +1070,11 @@
                             const { data } = supabaseApp.storage.from('evidences').getPublicUrl(fileName);
                             evidenceUrl = data.publicUrl;
                         } catch (e) {
-                            // Si falla la subida (puede haber perdido conexión durante el intento), guardar offline
+                            // Si falla la subida (pérdida de conexión durante el proceso), guardar offline
                             try {
                                 const blob = await fileToBlob(archivo);
                                 await saveActionOffline({
-                                    userId: currentUser.id,
+                                    userId: userId,
                                     tipo: nombreAccion,
                                     puntos: puntosSumados,
                                     fileName: archivo.name,
@@ -1047,7 +1093,7 @@
                     }
 
                     const { error } = await supabaseApp.from('acciones').insert({
-                        codigo_voluntario: currentUser.id,
+                        codigo_voluntario: userId,
                         tipo: nombreAccion,
                         puntos: puntosSumados,
                         evidencia_url: evidenceUrl
