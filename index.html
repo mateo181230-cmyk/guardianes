@@ -73,18 +73,18 @@
 
         <div class="flex border-b border-gray-200 shrink-0">
             <button id="tab-login" onclick="switchTab('login')"
-                class="flex-1 py-4 text-sm font-bold text-brand-blue border-b-2 border-brand-blue transition-colors">
+                class="flex-1 py-4 text-sm font-bold text-gray-400 text-brand-blue border-transparent hover:text-brand-blue transition-colors">
                 Iniciar Sesión
             </button>
             <button id="tab-register" onclick="switchTab('register')"
-                class="flex-1 py-4 text-sm font-semibold text-gray-400 border-b-2 border-transparent hover:text-brand-blue transition-colors">
+                class="flex-1 py-4 text-sm font-semibold  text-brand-blue border-b-2 border-brand-blue border-b-2 transition-colors">
                 Registrarse
             </button>
         </div>
 
         <div class="flex-1 overflow-y-auto p-6 bg-brand-light/30">
 
-            <form id="form-login" class="form-section space-y-5" onsubmit="iniciarSesion(event)">
+            <form id="form-login" class="form-section hidden-form space-y-5" onsubmit="iniciarSesion(event)">
                 <div>
                     <label class="block text-xs font-bold text-brand-blue uppercase mb-1">WhatsApp <span
                             class="text-brand-red">*</span></label>
@@ -100,7 +100,8 @@
                             class="text-brand-red">*</span></label>
                     <div class="relative">
                         <i class="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                        <input type="password" id="log-password" required placeholder="Tu año de nacimiento"
+                        <input type="password" id="log-password" required
+                            placeholder="Tu año de nacimiento mas tu edad juntas"
                             class="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-brand-blue outline-none transition-shadow">
                     </div>
                 </div>
@@ -110,13 +111,13 @@
                     Entrar a la Campaña <i class="fa-solid fa-arrow-right ml-2"></i>
                 </button>
                 <div class="text-center mt-4">
-                    <a href="https://wa.me/573000000000"
+                    <a href="https://wa.me/573209810546"
                         class="text-xs text-gray-500 hover:text-brand-blue font-medium underline">¿Olvidaste tu
                         contraseña?</a>
                 </div>
             </form>
 
-            <form id="form-register" class="form-section hidden-form space-y-5" onsubmit="registrarVoluntario(event)">
+            <form id="form-register" class="form-section  space-y-5" onsubmit="registrarVoluntario(event)">
                 <div class="space-y-4">
                     <h3 class="text-sm font-bold text-brand-red border-b border-gray-200 pb-1"><i
                             class="fa-regular fa-id-card mr-2"></i>Datos Personales</h3>
@@ -260,7 +261,7 @@
                         <label class="block text-xs font-bold text-brand-blue uppercase mb-2">Firmeza de apoyo (1 al 5)
                             <span class="text-brand-red">*</span></label>
                         <div class="flex justify-between gap-2">
-                            <label class="flex-1 cursor-pointer"><input type="radio" name="apoyo" value="1" required
+                            <label class="flex-1 cursor-pointer"><input type="radio" name="apoyo" value="1" required=""
                                     class="hidden custom-radio">
                                 <div
                                     class="w-full text-center py-2 border border-gray-200 rounded-lg font-bold text-gray-500">
@@ -301,7 +302,8 @@
                     <div>
                         <label class="block text-xs font-bold text-brand-blue uppercase mb-1">Contraseña <span
                                 class="text-brand-red">*</span></label>
-                        <input type="password" id="reg-password" required placeholder="Ej: 200026"
+                        <input type="password" id="reg-password" required
+                            placeholder="Ej: 200026 es decir año 2000 y edad 26"
                             class="w-full bg-white border border-brand-yellow rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-blue outline-none">
                         <p class="text-[11px] font-medium text-gray-500 mt-1.5 flex items-center">
                             <i class="fa-solid fa-circle-info text-brand-yellow mr-1"></i>

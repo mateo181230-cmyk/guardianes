@@ -38,6 +38,22 @@
         window.supabaseApp = supabaseApp;
     </script>
     <style>
+        #customAlert {
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0.3s, opacity 0.3s;
+        }
+
+        #customAlert.show {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        #customAlert.show #alertContent {
+            transform: scale(1);
+            opacity: 1;
+        }
+
         /* Oculta la barra de desplazamiento para un look más de "App" */
         ::-webkit-scrollbar {
             display: none;
@@ -65,7 +81,24 @@
 </head>
 
 <body class="bg-gray-100 flex justify-center font-sans text-gray-800">
+
     <script>
+        function showCustomAlert(message, title = 'Aviso') {
+            const modal = document.getElementById('customAlert');
+            const titleEl = document.getElementById('alertTitle');
+            const messageEl = document.getElementById('alertMessage');
+            titleEl.innerText = title;
+            messageEl.innerText = message;
+            modal.classList.add('show');
+            // Cerrar al hacer clic en el botón
+            document.getElementById('alertCloseBtn').onclick = () => {
+                modal.classList.remove('show');
+            };
+            // También cerrar si se clica fuera del contenido
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.classList.remove('show');
+            });
+        }
         // 1. Definimos la lógica fuera de la función principal para que sea reutilizable
 
         function actualizarUIconPerfil(perfil) {
@@ -577,6 +610,11 @@
                                 <i class="fa-solid fa-circle-info text-gray-400 mt-1"></i>
                                 <p id="detallesDescripcion" class="text-xs text-gray-500 leading-relaxed"></p>
                             </div>
+                            <div id="filaEnlace" class="flex items-start gap-3 hidden">
+                                <i class="fa-solid fa-video text-gray-400 mt-1"></i>
+                                <a id="detallesEnlace" href="#" target="_blank"
+                                    class="text-brand-blue underline text-sm break-all"></a>
+                            </div>
                         </div>
 
                         <button onclick="cerrarDetalles()"
@@ -689,6 +727,17 @@
                     document.getElementById('detallesDireccion').innerText = data.direccion || '';
                     document.getElementById('detallesDescripcion').innerText = data.descripcion || '';
 
+                    // Manejar el enlace virtual
+                    const filaEnlace = document.getElementById('filaEnlace');
+                    const enlaceElemento = document.getElementById('detallesEnlace');
+                    if (data.enlace_virtual && data.enlace_virtual.trim() !== '') {
+                        enlaceElemento.href = data.enlace_virtual;
+                        enlaceElemento.innerText = data.enlace_virtual;
+                        filaEnlace.classList.remove('hidden');
+                    } else {
+                        filaEnlace.classList.add('hidden');
+                    }
+
                     // Asignar el mapa (si existe)
                     const iframeMapa = document.getElementById('mapaEvento');
                     if (data.mapa) {
@@ -717,7 +766,7 @@
                         const { data: { user }, error: authError } = await supabaseApp.auth.getUser();
 
                         if (authError || !user) {
-                            alert("Debes iniciar sesión para registrarte en un evento.");
+                            showCustomAlert("Debes iniciar sesión para registrarte en un evento.");
                             boton.disabled = false;
                             boton.innerHTML = textoOriginal;
                             return;
@@ -736,7 +785,7 @@
                         if (insertError) {
                             // Manejar error (por ejemplo, si ya estaba registrado y tienes una restricción de unicidad)
                             console.error("Error al guardar el registro:", insertError);
-                            alert("Hubo un problema al procesar tu registro. Por favor, intenta de nuevo.");
+                            showCustomAlert("Hubo un problema al procesar tu registro. Por favor, intenta de nuevo.");
                             boton.disabled = false;
                             boton.innerHTML = textoOriginal;
                             return;
@@ -754,7 +803,7 @@
 
                     } catch (err) {
                         console.error("Error inesperado:", err);
-                        alert("Ocurrió un error inesperado.");
+                        showCustomAlert("Ocurrió un error inesperado.");
                         boton.disabled = false;
                         boton.innerHTML = 'Registro';
                     }
@@ -805,11 +854,80 @@
                             <label class="block text-xs font-bold text-gray-600 mb-1">¿QUÉ ACCIÓN REALIZASTE?</label>
                             <select id="selectAccion"
                                 class="w-full p-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-red outline-none">
-                                <option value="1">Volanteo pedagógico (10 pts)</option>
-                                <option value="2">Reunión vecinal (50 pts)</option>
-                                <option value="3">Inscripción voluntario (30 pts)</option>
-                                <option value="4">Debate en redes (5 pts)</option>
+                                <optgroup label="⚡ Micro-Acciones Digitales (fáciles)">
+                                    <option value="5"
+                                        data-desc="Dar 'Like', comentar positivamente o reaccionar a los posts oficiales.">
+                                        Interacción Social (5 pts)</option>
+                                    <option value="10"
+                                        data-desc="Compartir la pieza gráfica del día en 'Mi Estado' o grupos familiares.">
+                                        Difusión en WhatsApp (10 pts)</option>
+                                    <option value="15"
+                                        data-desc="Cambiar la foto de perfil o usar el marco oficial de la campaña.">
+                                        Identidad Digital (15 pts)</option>
+                                    <option value="15"
+                                        data-desc="Invitar a 5 amigos a seguir las redes sociales del proyecto o unirse al canal de Telegram.">
+                                        Crecimiento de Red (15 pts)</option>
+                                    <option value="10"
+                                        data-desc="Participar en encuestas rápidas o sondeos en historias de Instagram/Facebook.">
+                                        Opinión Activa (10 pts)</option>
+                                </optgroup>
+                                <optgroup label="📢 Visibilidad y Voz a Voz (intermedias)">
+                                    <option value="20"
+                                        data-desc="Defender las propuestas con argumentos en hilos de discusión o comentarios.">
+                                        Debate en Redes (20 pts)</option>
+                                    <option value="25"
+                                        data-desc="Explicar una propuesta específica a un conocido o familiar en una charla casual.">
+                                        El "Dato del Día" (25 pts)</option>
+                                    <option value="30"
+                                        data-desc="Portar una gorra, camiseta o sticker de la campaña en lugares públicos.">
+                                        Uso de Marca (30 pts)</option>
+                                    <option value="30"
+                                        data-desc="Entregar material pedagógico en tu círculo cercano (vecinos o compañeros).">
+                                        Micro-volanteo (30 pts)</option>
+                                    <option value="35"
+                                        data-desc="Informar sobre el estado de la publicidad física o enviar fotos de eventos locales.">
+                                        Reporte de Campo (35 pts)</option>
+                                </optgroup>
+                                <optgroup label="🏛️ Acciones de Estructura y Suelo (fundamentales)">
+                                    <option value="50"
+                                        data-desc="Organizar o asistir a una charla en un hogar para captar nuevos apoyos.">
+                                        Reunión Vecinal (50 pts)</option>
+                                    <option value="70"
+                                        data-desc="Lograr que una persona nueva se registre formalmente en el equipo.">
+                                        Inscripción de Voluntarios (70 pts)</option>
+                                    <option value="80"
+                                        data-desc="Llenar formularios de intención de voto para organizar la base de datos.">
+                                        Caracterización de Votos (80 pts)</option>
+                                    <option value="100"
+                                        data-desc="Asistir a los talleres para defender el voto el día de las elecciones.">
+                                        Capacitación de Testigos (100 pts)</option>
+                                    <option value="200"
+                                        data-desc="Ejercer como testigo en la mesa el día de la votación.">Vigilancia
+                                        Electoral / Día D (200 pts)</option>
+                                </optgroup>
                             </select>
+                            <p id="descripcionAccion" class="text-xs text-gray-500 mt-1 italic"></p>
+                            <script>
+                                // Al cargar la página, establecer la descripción de la opción por defecto
+                                document.addEventListener('DOMContentLoaded', function () {
+                                    const select = document.getElementById('selectAccion');
+                                    const descripcion = document.getElementById('descripcionAccion');
+
+                                    function actualizarDescripcion() {
+                                        const selectedOption = select.options[select.selectedIndex];
+                                        const desc = selectedOption.getAttribute('data-desc');
+                                        if (desc) {
+                                            descripcion.textContent = desc;
+                                            descripcion.classList.remove('hidden');
+                                        } else {
+                                            descripcion.classList.add('hidden');
+                                        }
+                                    }
+
+                                    select.addEventListener('change', actualizarDescripcion);
+                                    actualizarDescripcion(); // inicializar
+                                });
+                            </script>
                         </div>
 
                         <div class="grid grid-cols-2 gap-3">
@@ -876,41 +994,82 @@
                     }
                 }
 
-                async function cargarFeed() {
-                    const feed = document.getElementById('feed-actividades');
-                    if (!feed) return;
+                let currentOffset = 0;
+                let isLoadingMore = false;
+                let hasMore = true;
+                const PAGE_SIZE = 10;
 
-                    feed.innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Cargando acciones...</div>';
+                async function cargarFeed(append = false) {
+                    if (isLoadingMore) return;
+                    isLoadingMore = true;
+
+                    const feed = document.getElementById('feed-actividades');
+                    if (!feed) { isLoadingMore = false; return; }
+
+                    // Eliminar botón "Ver más" anterior si existe
+                    const btnVerMas = document.getElementById('btn-ver-mas');
+                    if (btnVerMas) btnVerMas.remove();
+
+                    if (!append) {
+                        // Primera carga: limpiar feed y reiniciar paginación
+                        currentOffset = 0;
+                        hasMore = true;
+                        feed.innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Cargando acciones...</div>';
+                    } else {
+                        // Carga adicional: mostrar spinner al final
+                        feed.insertAdjacentHTML('beforeend', '<div id="feed-spinner" class="text-center py-4 text-gray-400"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Cargando más...</div>');
+                    }
 
                     const { data, error } = await supabaseApp
                         .from('acciones')
                         .select(`
-                *,
-                voluntarios (
-                    nombre,
-                    ciudad,
-                    total_puntos
-                )
+                        id,
+                        tipo,
+                        puntos,
+                        evidencia_url,
+                        likes,
+                        voluntarios:codigo_voluntario(
+                            nombre,
+                            total_puntos
+                        )
             `)
                         .order('fecha_creacion', { ascending: false })
-                        .limit(10);
+                        .range(currentOffset, currentOffset + PAGE_SIZE - 1);
+
+                    // Quitar spinner de carga adicional
+                    const spinner = document.getElementById('feed-spinner');
+                    if (spinner) spinner.remove();
+
+                    isLoadingMore = false;
 
                     if (error) {
-                        feed.innerHTML = '<div class="text-red-500 text-xs text-center py-4">Error al cargar el feed</div>';
+                        console.error("Error cargando feed:", error);
+                        if (!append) {
+                            feed.innerHTML = '<div class="text-red-500 text-xs text-center py-4">Error al cargar el feed</div>';
+                        }
                         return;
                     }
 
-                    feed.innerHTML = '';
-                    if (data.length === 0) {
-                        feed.innerHTML = '<div class="text-center py-8 text-gray-400 italic">No hay acciones registradas aún</div>';
+                    if (!append) feed.innerHTML = '';
+
+                    if (!data || data.length === 0) {
+                        if (!append) {
+                            feed.innerHTML = '<div class="text-center py-8 text-gray-400 italic">No hay acciones registradas aún</div>';
+                        }
+                        hasMore = false;
                         return;
                     }
+
+                    // Si devolvió menos de PAGE_SIZE ítems, ya no hay más
+                    hasMore = data.length === PAGE_SIZE;
+                    currentOffset += data.length;
 
                     data.forEach(item => {
-                        const vol = item.voluntarios || { nombre: 'Voluntario', ciudad: 'Colombia', total_puntos: 0 };
-
-                        // Determinamos el avatar basado en el TOTAL de puntos del voluntario, no en los de la acción
-                        const rango = obtenerRangoVoluntario(vol.total_puntos);
+                        const perfil = item.voluntarios || {};
+                        const nombreVoluntario = perfil.nombre || 'Voluntario';
+                        const ciudadVoluntario = perfil.departamento || 'Colombia';
+                        const totalPuntos = perfil.total_puntos || 0;
+                        const rango = obtenerRangoVoluntario(totalPuntos);
 
                         let evidenciaHtml = '';
                         if (item.evidencia_url) {
@@ -920,35 +1079,103 @@
                                 evidenciaHtml = `<video controls class="w-full h-full object-cover rounded-md"><source src="${item.evidencia_url}"></video>`;
                             }
                         } else {
-                            evidenciaHtml = '<p class="text-gray-400">Nuevo Voluntario ☺️</p>';
+                            evidenciaHtml = `<p class="text-gray-400">${perfil.nombre} agregó un Voluntario ☺️</p>`;
                         }
+
+                        const likesActuales = item.likes || 0;
+                        const colorCorazon = likesActuales > 0 ? 'text-red-500' : 'text-gray-400';
 
                         const html = `
                 <div class="relative animate-fade-in mb-8">
                     <div class="absolute -left-12 top-0">
                         <img src="${rango.imagen}" class="w-10 h-10 rounded-full border-2 border-white shadow-md" title="Nivel: ${rango.nivel}">
                     </div>
-                    
                     <div class="ml-2">
                         <p class="text-sm text-gray-800">
-                            <strong class="text-brand-blue">${vol.nombre}</strong> 
-                            <span class="text-gray-400">en</span> ${vol.ciudad} 
+                            <strong class="text-brand-blue">${nombreVoluntario}</strong> 
+                            <span class="text-gray-400">en</span> ${ciudadVoluntario} 
                             <span class="text-gray-400">—</span> ${item.tipo}
                         </p>
                         <p class="text-[10px] text-brand-red font-bold uppercase tracking-wider mb-2">
-                            +${item.puntos} Puntos Esperanza
-                        </p>
+                            +${item.puntos} Puntos Serios
                         <div class="bg-gray-100 h-48 rounded-xl w-full overflow-hidden flex items-center justify-center border border-gray-50 shadow-inner">
                             ${evidenciaHtml}
+                            <button onclick="darLike(${item.id}, ${likesActuales}, this)" 
+                                    class="absolute bottom-3 right-3 flex items-center gap-2 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg hover:scale-110 transition-all active:scale-95 group/btn">
+                                <i class="fa-solid fa-heart ${colorCorazon} transition-colors duration-300 icono-corazon"></i>
+                                <span class="text-xs font-bold text-gray-700 contador-likes">${likesActuales}</span>
+                            </button>
                         </div>
                     </div>
                 </div>
             `;
                         feed.insertAdjacentHTML('beforeend', html);
                     });
+
+                    // Mostrar botón "Ver más" si quedan registros
+                    if (hasMore) {
+                        feed.insertAdjacentHTML('beforeend', `
+                            <div id="btn-ver-mas" class="flex justify-center py-4">
+                                <button onclick="cargarFeed(true)" class="flex items-center gap-2 bg-brand-blue text-white px-6 py-2.5 rounded-full text-xs font-bold shadow-md hover:bg-brand-blue/90 active:scale-95 transition-all">
+                                    <i class="fa-solid fa-chevron-down"></i> Ver más acciones
+                                </button>
+                            </div>
+                        `);
+                    } else {
+                        feed.insertAdjacentHTML('beforeend', `
+                            <div class="text-center py-4 text-gray-400 text-xs italic">— Has llegado al final del feed —</div>
+                        `);
+                    }
                 }
 
                 // ==================== ABRIR MODAL REGISTRO ====================
+                async function darLike(accionId, likesActuales, boton) {
+                    // 1. Evitar clics dobles mientras procesa
+                    if (boton.disabled) return;
+                    boton.disabled = true;
+
+                    const contador = boton.querySelector('.contador-likes');
+                    const icono = boton.querySelector('.icono-corazon'); // Seleccionamos el icono
+                    const nuevosLikes = parseInt(contador.innerText) + 1;
+
+                    // 2. Efecto visual inmediato (Optimistic UI)
+                    contador.innerText = nuevosLikes;
+
+                    // CAMBIO DE COLOR AL INSTANTE
+                    icono.classList.remove('text-gray-400');
+                    icono.classList.add('text-red-500', 'scale-125'); // Ponemos rojo y agrandamos un poco
+
+                    boton.classList.add('animate-ping'); // Tu efecto de destello
+                    setTimeout(() => {
+                        boton.classList.remove('animate-ping');
+                        icono.classList.remove('scale-125'); // Quitamos el efecto de agrandado
+                    }, 300);
+
+                    try {
+                        // 3. Actualizar en Supabase
+                        const { error } = await supabaseApp
+                            .from('acciones')
+                            .update({ likes: nuevosLikes })
+                            .eq('id', accionId);
+
+                        if (error) throw error;
+
+                    } catch (error) {
+                        console.error("Error al dar like:", error);
+
+                        // Si falla, revertimos el número Y el color
+                        contador.innerText = likesActuales;
+                        if (likesActuales === 0) {
+                            icono.classList.replace('text-red-500', 'text-gray-400');
+                        }
+                        alert("No se pudo registrar el like. Inténtalo de nuevo.");
+                    } finally {
+                        boton.disabled = false;
+                    }
+                }
+
+
+
                 async function registrarAccion() {
                     let perfil = null;
 
@@ -991,7 +1218,7 @@
                         infoDisplay.innerHTML = `<i class="fa-solid fa-user-check mr-2"></i> ${perfil.nombre} (${perfil.departamento})`;
                         modal.classList.remove('hidden');
                     } else {
-                        alert('No se pudo obtener tu información de usuario. Conéctate a internet para sincronizar.');
+                        showCustomAlert('No se pudo obtener tu información de usuario. Conéctate a internet para sincronizar.');
                     }
                 }
 
@@ -1007,20 +1234,38 @@
                         userId = localStorage.getItem('user_id');
                     }
                     if (!userId) {
-                        alert('Debes iniciar sesión');
+                        showCustomAlert('Debes iniciar sesión');
                         return;
                     }
 
                     const valor = document.getElementById('selectAccion').value;
                     const archivo = document.getElementById('archivoEvidencia').files[0];
 
-                    let puntosSumados = 0;
+                    let puntosSumados = parseInt(valor);
                     let nombreAccion = "";
-                    switch (valor) {
-                        case "1": puntosSumados = 10; nombreAccion = "Volanteo pedagógico"; break;
-                        case "2": puntosSumados = 50; nombreAccion = "Reunión vecinal"; break;
-                        case "3": puntosSumados = 30; nombreAccion = "Inscripción voluntario"; break;
-                        case "4": puntosSumados = 5; nombreAccion = "Debate en redes"; break;
+
+                    // Asignar el nombre de la acción según el valor (puntos)
+                    switch (puntosSumados) {
+                        case 5: nombreAccion = "Interacción Social"; break;
+                        case 10: nombreAccion = "Difusión en WhatsApp"; break;
+                        case 15:
+                            // Hay dos acciones con 15 pts, diferenciamos por el texto
+                            const textoOpcion = document.getElementById('selectAccion').options[document.getElementById('selectAccion').selectedIndex].text;
+                            nombreAccion = textoOpcion.includes("Identidad") ? "Identidad Digital" : "Crecimiento de Red";
+                            break;
+                        case 20: nombreAccion = "Debate en Redes"; break;
+                        case 25: nombreAccion = "El 'Dato del Día'"; break;
+                        case 30:
+                            const texto30 = document.getElementById('selectAccion').options[document.getElementById('selectAccion').selectedIndex].text;
+                            nombreAccion = texto30.includes("Marca") ? "Uso de Marca" : "Micro-volanteo";
+                            break;
+                        case 35: nombreAccion = "Reporte de Campo"; break;
+                        case 50: nombreAccion = "Reunión Vecinal"; break;
+                        case 70: nombreAccion = "Inscripción de Voluntarios"; break;
+                        case 80: nombreAccion = "Caracterización de Votos"; break;
+                        case 100: nombreAccion = "Capacitación de Testigos"; break;
+                        case 200: nombreAccion = "Vigilancia Electoral / Día D"; break;
+                        default: nombreAccion = "Acción sin clasificar";
                     }
 
                     // Validar tamaño del archivo (máx 50MB)
@@ -1045,13 +1290,13 @@
                                 fileBlob: blob
                             });
 
-                            alert(`📱 Sin internet — tu acción "${nombreAccion}" (+${puntosSumados} pts) fue guardada y se enviará automáticamente cuando vuelvas a tener conexión.`);
+                            showCustomAlert(`📱 Sin internet — tu acción "${nombreAccion}" (+${puntosSumados} pts) fue guardada y se enviará automáticamente cuando vuelvas a tener conexión.`);
                             cerrarModalRegistro();
 
                             const pending = await getPendingActions();
                             updateSyncBadge(pending.length, false);
                         } catch (e) {
-                            alert('Error al guardar offline: ' + e.message);
+                            showCustomAlert('Error al guardar offline: ' + e.message);
                         }
                         return;
                     }
@@ -1069,6 +1314,7 @@
 
                             const { data } = supabaseApp.storage.from('evidences').getPublicUrl(fileName);
                             evidenceUrl = data.publicUrl;
+                            alert('¡Todo listo! 🚀 Aguarda un instante mientras despega la carga.');
                         } catch (e) {
                             // Si falla la subida (pérdida de conexión durante el proceso), guardar offline
                             try {
@@ -1081,12 +1327,12 @@
                                     fileType: archivo.type,
                                     fileBlob: blob
                                 });
-                                alert(`📱 Se perdió la conexión — tu acción fue guardada offline y se enviará cuando tengas internet.`);
+                                showCustomAlert(`📱 Se perdió la conexión — tu acción fue guardada offline y se enviará cuando tengas internet.`);
                                 cerrarModalRegistro();
                                 const pending = await getPendingActions();
                                 updateSyncBadge(pending.length, false);
                             } catch (offlineErr) {
-                                alert('Error al subir archivo: ' + e.message);
+                                showCustomAlert('Error al subir archivo: ' + e.message);
                             }
                             return;
                         }
@@ -1100,11 +1346,11 @@
                     });
 
                     if (error) {
-                        alert('Error al guardar la acción: ' + error.message);
+                        showCustomAlert('Error al guardar la acción: ' + error.message);
                         return;
                     }
 
-                    alert(`¡Excelente! Has sumado ${puntosSumados} puntos`);
+                    showCustomAlert(`¡Excelente! Has sumado ${puntosSumados} puntos`);
                     cerrarModalRegistro();
                     cargarFeed();
                 }
@@ -1279,6 +1525,23 @@
         // Lógica para el sistema de navegación
         function showPage(pageId) {
             // 1. Ocultar todas las secciones
+            switch (pageId) {
+                case "inicio":
+                    cargarTareasDigitales();
+                    break;
+
+                case "acciones":
+                    cargarFeed();
+                    break;
+
+                case "calendario":
+                    cargarEventos();
+                    break;
+
+                case "perfil":
+                    obtenerDatosUsuario();
+                    break;
+            }
             const pages = document.querySelectorAll('.page-content');
             pages.forEach(page => {
                 page.classList.add('hidden-page');
@@ -1347,6 +1610,23 @@
             });
         }
     </script>
+    <div id="customAlert"
+        class="fixed inset-0 z-[500] bg-black/50 flex items-center justify-center p-4 hidden transition-all duration-300 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden transform transition-all scale-95 opacity-0"
+            id="alertContent">
+            <div class="p-6 flex flex-col items-center text-center">
+                <div class="w-16 h-16 bg-brand-light rounded-full flex items-center justify-center mb-4">
+                    <img src="logo.webp" alt="Logo" class="h-10 w-auto">
+                </div>
+                <h3 id="alertTitle" class="text-lg font-bold text-brand-blue mb-2"></h3>
+                <p id="alertMessage" class="text-gray-600 text-sm mb-6"></p>
+                <button id="alertCloseBtn"
+                    class="bg-brand-red text-white px-6 py-2 rounded-full text-sm font-bold shadow-md hover:bg-red-800 transition-colors">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
