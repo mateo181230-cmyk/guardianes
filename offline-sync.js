@@ -106,7 +106,7 @@ async function syncPendingActions() {
     if (pending.length === 0) return;
 
     console.log(`[OfflineSync] Sincronizando ${pending.length} acciones pendientes...`);
-    updateSyncBadge(pending.length, true); // Mostrar "Sincronizando..."
+    updateSyncBadge(pending.length, true);
 
     let syncedCount = 0;
 
@@ -119,21 +119,21 @@ async function syncPendingActions() {
                 const fileName = `${action.userId}-${Date.now()}-${action.fileName}`;
                 const file = new File([action.fileBlob], action.fileName, { type: action.fileType });
 
-                const { error: uploadError } = await supabaseApp.storage
+                const { error: uploadError } = await window.supabaseApp.storage
                     .from('evidences')
                     .upload(fileName, file);
 
                 if (uploadError) {
                     console.error('[OfflineSync] Error subiendo archivo:', uploadError);
-                    continue; // Saltar esta acción, se reintentará después
+                    continue;
                 }
 
-                const { data } = supabaseApp.storage.from('evidences').getPublicUrl(fileName);
+                const { data } = window.supabaseApp.storage.from('evidences').getPublicUrl(fileName);
                 evidenceUrl = data.publicUrl;
             }
 
             // Insertar registro en tabla acciones
-            const { error: insertError } = await supabaseApp.from('acciones').insert({
+            const { error: insertError } = await window.supabaseApp.from('acciones').insert({
                 codigo_voluntario: action.userId,
                 tipo: action.tipo,
                 puntos: action.puntos,
@@ -145,7 +145,6 @@ async function syncPendingActions() {
                 continue;
             }
 
-            // Éxito: eliminar de IndexedDB
             await deleteAction(action.id);
             syncedCount++;
             console.log(`[OfflineSync] Acción sincronizada: ${action.tipo} (+${action.puntos} pts)`);
@@ -155,18 +154,16 @@ async function syncPendingActions() {
         }
     }
 
-    // Actualizar badge
     const remaining = await getPendingActions();
     updateSyncBadge(remaining.length, false);
 
     if (syncedCount > 0) {
         showSyncToast(`✅ ${syncedCount} acción(es) sincronizada(s) exitosamente`);
-        // Recargar feed si estamos en la página de acciones
-        if (typeof cargarFeed === 'function') {
-            cargarFeed();
-        }
+        if (typeof cargarFeed === 'function') cargarFeed();
     }
 }
+
+
 
 // ============================================================
 // 6. UI — Badge de acciones pendientes

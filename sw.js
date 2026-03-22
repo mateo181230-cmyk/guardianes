@@ -54,20 +54,11 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // No interceptar peticiones a Supabase (queremos datos frescos cuando hay red)
-  if (url.hostname.includes('supabase.co')) {
-    return;
-  }
+  // Solo manejamos GET
+  if (event.request.method !== 'GET') return;
 
-  // Para peticiones POST (como subir archivos), no cachear
-  if (event.request.method !== 'GET') {
-    return;
-  }
-
-  // Para CDNs conocidos: cache-first (se cachean en el primer uso)
-  const isCDN = CDN_CACHE_PATTERNS.some(pattern => event.request.url.includes(pattern));
-
-  if (isCDN) {
+  // Supabase Storage: archivos estáticos (imágenes, videos, PDFs)
+  if (url.hostname.includes('supabase.co') && url.pathname.includes('/storage/v1/object/public/')) {
     event.respondWith(
       caches.match(event.request).then(cached => {
         if (cached) return cached;
@@ -77,39 +68,51 @@ self.addEventListener('fetch', event => {
             caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
           }
           return response;
-        }).catch(() => {
-          // CDN offline y no cacheado → no podemos hacer nada
-          return new Response('', { status: 503 });
         });
       })
     );
     return;
   }
 
-  // Para archivos locales: Network-first con fallback a cache
-  // Esto asegura que siempre se sirva la versión más reciente cuando hay internet,
-  // pero cuando no hay internet, se sirve la versión cacheada (la misma página)
+  // Supabase REST: consultas a tablas (imagenes, videos, pdf, youtube)
+  if (url.hostname.includes('supabase.co') && url.pathname.includes('/rest/v1/')) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // CDNs: cache-first
+  const isCDN = CDN_CACHE_PATTERNS.some(pattern => event.request.url.includes(pattern));
+  if (isCDN) {
+    event.respondWith(
+      caches.match(event.request).then(cached => cached || fetch(event.request))
+    );
+    return;
+  }
+
+  // Archivos locales: network-first con fallback a cache
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Cachear la respuesta fresca
         if (response.ok && url.origin === self.location.origin) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }
         return response;
       })
-      .catch(() => {
-        // Sin internet → servir desde cache (la misma página que ya vio el usuario)
-        return caches.match(event.request).then(cached => {
-          if (cached) return cached;
-
-          // Si es una navegación y no hay cache, servir inicio.html cacheado
-          if (event.request.mode === 'navigate') {
-            return caches.match('./inicio.html');
-          }
-        });
-      })
+      .catch(() => caches.match(event.request).then(cached => {
+        if (cached) return cached;
+        if (event.request.mode === 'navigate') return caches.match('./inicio.html');
+      }))
   );
 });
 

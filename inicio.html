@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +11,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="logo.webp">
+    </div>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -32,368 +35,429 @@
         const supabaseUrl = 'https://eixfmvsbjjxfytjynnkf.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpeGZtdnNiamp4Znl0anlubmtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNDEzMjksImV4cCI6MjA4OTcxNzMyOX0.ir4g_PI4KKyy14vDfGA4GHDdIIw3Ty2FqS0uC_Z-qQY';
         const supabaseApp = supabase.createClient(supabaseUrl, supabaseKey);
+        window.supabaseApp = supabaseApp;
     </script>
     <style>
         /* Oculta la barra de desplazamiento para un look más de "App" */
-        ::-webkit-scrollbar { display: none; }
-        
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
         /* Animación suave para la transición de pantallas */
-        .page-content { transition: opacity 0.3s ease; }
-        .hidden-page { display: none; opacity: 0; }
-        
+        .page-content {
+            transition: opacity 0.3s ease;
+        }
+
+        .hidden-page {
+            display: none;
+            opacity: 0;
+        }
+
         /* Estilo para los botones de grupo activos */
-        .group-btn-active { @apply bg-brand-red text-white; }
-        .dept-title-active { @apply bg-white border border-gray-200; }
+        .group-btn-active {
+            @apply bg-brand-red text-white;
+        }
+
+        .dept-title-active {
+            @apply bg-white border border-gray-200;
+        }
     </style>
 </head>
+
 <body class="bg-gray-100 flex justify-center font-sans text-gray-800">
-<script>
-    // 1. Definimos la lógica fuera de la función principal para que sea reutilizable
-    function obtenerRangoVoluntario(puntos) {
-        const pts = puntos || 0; // Manejar casos donde puntos sea null o undefined
-        
-        if (pts <= 50) {
-            return {
-                nivel: "Semilla",
-                imagen: "https://img.freepik.com/vector-gratis/lindo-caballero-armadura-acero-espada-icono-vectorial-dibujos-animados-ilustracion-gente-vacaciones-aislado-plano_138676-14664.jpg?semt=ais_hybrid&w=740&q=80"
-            };
-        } else if (pts <= 150) {
-            return {
-                nivel: "Raiz",
-                imagen: "https://img.freepik.com/vector-premium/diseno-personajes-dibujos-animados-profesionales-ilustracion-vectorial-hermosa_1253044-17168.jpg?semt=ais_hybrid&w=740&q=80"
-            };
-        } else {
-            return {
-                nivel: "Roble",
-                imagen: "https://img.freepik.com/vector-premium/diseno-personajes-dibujos-animados-profesionales-ilustracion-vectorial-hermosa_1253044-11195.jpg?semt=ais_hybrid&w=740&q=80"
-            };
+    <script>
+        // 1. Definimos la lógica fuera de la función principal para que sea reutilizable
+
+        function actualizarUIconPerfil(perfil) {
+            const puntosActuales = perfil.total_puntos || 0;
+            const rango = obtenerRangoVoluntario(puntosActuales);
+            document.getElementById('user-nombre').innerText = perfil.nombre;
+            document.getElementById('user-whatsapp').innerText = perfil.whatsapp;
+            document.getElementById('user-depto1').innerText = perfil.departamento;
+            document.getElementById('user-depto').innerText = perfil.departamento;
+            document.getElementById('user-ciudad').innerText = perfil.ciudad;
+            document.getElementById('user-puntos-total').innerText = puntosActuales;
+            document.getElementById('codigo_vol').innerText = perfil.id;
+            const imgElement = document.getElementById('imagenPerfil');
+            const nivelElement = document.getElementById('nivel_2');
+            if (imgElement) imgElement.src = rango.imagen;
+            if (nivelElement) nivelElement.innerText = rango.nivel;
         }
-    }
 
-    async function obtenerDatosUsuario() {
-    const { data: { user } } = await supabaseApp.auth.getUser();
-    
-    if (!user) {
-        await supabaseApp.auth.signOut();
-        window.location.href = "index.html"; 
-        return;
-    }
+        async function obtenerDatosUsuario() {
+            const { data: { user } } = await supabaseApp.auth.getUser();
 
-    const { data: perfil, error } = await supabaseApp
-        .from('voluntarios')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-    if (perfil) {
-        // 1. Calculamos el rango basado en los puntos
-        const puntosActuales = perfil.total_puntos || 0;
-        const rango = obtenerRangoVoluntario(puntosActuales);
-
-        // 2. Actualizamos los textos básicos
-        document.getElementById('user-nombre').innerText = perfil.nombre;
-        document.getElementById('user-whatsapp').innerText = perfil.whatsapp;
-        document.getElementById('user-depto1').innerText = perfil.departamento;
-        document.getElementById('user-depto').innerText = perfil.departamento;
-        document.getElementById('user-ciudad').innerText = perfil.ciudad;
-        document.getElementById('user-puntos-total').innerText = puntosActuales;
-        document.getElementById('codigo_vol').innerText = perfil.id;
-
-        // 3. Actualizamos Imagen y Nivel (usando el ID nivel_2 de tu HTML)
-        const imgElement = document.getElementById('imagenPerfil');
-        const nivelElement = document.getElementById('nivel_2');
-
-        if (imgElement) imgElement.src = rango.imagen;
-        if (nivelElement) nivelElement.innerText = rango.nivel;
-    }}
-    obtenerDatosUsuario()
-</script>
-<div class="w-full max-w-md bg-white min-h-screen relative shadow-2xl flex flex-col overflow-hidden">
-
-   <header class="bg-brand-yellow p-4 flex items-center justify-center border-b border-brand-yellow sticky top-0 z-10 shadow-sm">
-        <div class="flex items-center gap-2">
-            <img src="logo.webp" alt="Logo" class="h-10 w-auto">
-            <div class="text-center">
-                <h1 class="font-black text-brand-blue leading-tight text-xl tracking-tight uppercase">Guardianes Colombia</h1>
-                <p class="text-xs text-brand-red font-bold uppercase tracking-wider">Fajardo Presidente</p>
-            </div>
-        </div>
-    </header>
-
-    <main id="main-content" class="flex-1 overflow-y-auto pb-24 p-4 space-y-6">
-
-        <section id="page-inicio" class="page-content space-y-6">
-            <div class="rounded-xl overflow-hidden shadow-md relative bg-black aspect-video flex items-center justify-center group">
-                <div id="playerYouTube" class="absolute inset-0 w-full h-full pointer-events-none opacity-0 transition-opacity duration-700"></div>
-                <img id="posterVideo" 
-                    src="https://img.youtube.com/vi/0mQry1Y_buI/maxresdefault.jpg" 
-                    alt="Portada Video Campaña" 
-                    class="absolute inset-0 w-full h-full object-cover opacity-80">
-
-                <div id="overlayVideo" class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                <button 
-                    id="btnPlayYT"
-                    onclick="reproducirVideoFajardo()"
-                    class="relative z-30 bg-brand-yellow/90 p-5 rounded-full backdrop-blur-sm hover:bg-brand-yellow transition duration-300 transform hover:scale-110 shadow-2xl group">
-                    <i class="fa-solid fa-play text-brand-blue text-3xl ml-1 group-hover:text-brand-red transition-colors"></i>
-                </button>
-            </div>
-        <script src="https://www.youtube.com/iframe_api"></script>
-        <script>
-            let player;
-
-            // Se activa cuando la API de YouTube está lista
-            function onYouTubeIframeAPIReady() {
-                player = new YT.Player('playerYouTube', {
-                    height: '100%',
-                    width: '100%',
-                    videoId: '0mQry1Y_buI', // Tu video: "¿Qué es ser un Guardián?"
-                    playerVars: {
-                        'autoplay': 0,
-                        'controls': 1,      // Mostramos controles una vez empiece para que el usuario pueda adelantar
-                        'rel': 0,           // No mostrar videos relacionados al final
-                        'modestbranding': 1,
-                        'playsinline': 1
+            if (!user) {
+                const { data: { session } } = await supabaseApp.auth.getSession();
+                if (session) {
+                    // Hay sesión pero no pudimos obtener el usuario (posiblemente offline)
+                    const storedPerfil = localStorage.getItem('perfil_voluntario');
+                    if (storedPerfil) {
+                        actualizarUIconPerfil(JSON.parse(storedPerfil));
+                        return;
                     }
-                });
+                }
+                // Si no hay nada, redirigir al login
+                await supabaseApp.auth.signOut();
+                window.location.href = "index.html";
+                return;
             }
 
-            function reproducirVideoFajardo() {
-                if (player && player.playVideo) {
-                    // Ejecutar el video
-                    player.playVideo();
+            // 3. Si hay usuario, consultar la tabla voluntarios
+            const { data: perfil, error } = await supabaseApp
+                .from('voluntarios')
+                .select('*')
+                .eq('id', user.id)
+                .single();
 
-                    // Referencias de interfaz
-                    const ytContainer = document.getElementById('playerYouTube');
-                    const poster = document.getElementById('posterVideo');
-                    const overlay = document.getElementById('overlayVideo');
-                    const btn = document.getElementById('btnPlayYT');
-
-                    // 1. Mostrar el video y permitir que reciba clics
-                    ytContainer.style.opacity = "1";
-                    ytContainer.style.pointerEvents = "auto";
-
-                    // 2. Desvanecer visualmente los elementos frontales
-                    poster.style.opacity = "0";
-                    overlay.style.opacity = "0";
-                    btn.style.transform = "scale(0)";
-
-                    // 3. ¡SOLUCIÓN! Quitar la interacción física de los elementos frontales
-                    // Esto permite que los clics "pasen a través" de ellos hacia el video
-                    poster.style.pointerEvents = "none";
-                    overlay.style.pointerEvents = "none";
-                    btn.style.pointerEvents = "none";
-
-                    // 4. Opcional: Ocultarlos completamente tras la animación para mayor limpieza
-                    setTimeout(() => {
-                        btn.style.display = "none";
-                        poster.style.display = "none";
-                        overlay.style.display = "none";
-                    }, 700); // Usamos 700ms para coincidir con tu transition duration-700
+            if (perfil) {
+                // Guardar en localStorage para uso offline
+                localStorage.setItem('perfil_voluntario', JSON.stringify(perfil));
+                actualizarUIconPerfil(perfil);
+            } else if (error && !navigator.onLine) {
+                // Fallback offline: usar datos guardados
+                const storedPerfil = localStorage.getItem('perfil_voluntario');
+                if (storedPerfil) {
+                    actualizarUIconPerfil(JSON.parse(storedPerfil));
                 }
             }
-        </script>
+        }
+        obtenerDatosUsuario()
+        function updateOfflineIndicator() {
+            const indicator = document.getElementById('offline-indicator');
+            if (!navigator.onLine) indicator.classList.remove('hidden');
+            else indicator.classList.add('hidden');
+        }
+        window.addEventListener('online', updateOfflineIndicator);
+        window.addEventListener('offline', updateOfflineIndicator);
+        updateOfflineIndicator();
+    </script>
+    <div class="w-full max-w-md bg-white min-h-screen relative shadow-2xl flex flex-col overflow-hidden">
 
-            <div class="bg-brand-blue text-white p-2 text-xs font-medium text-center rounded-lg shadow-sm !mt-1">
-                Un mensaje de Sergio Fajardo para todos los Guardianes.
-            </div>
-
-            <div class="bg-white p-4 rounded-xl border border-brand-yellow/30 !mt-2">
-                <h2 class="font-bold text-sm text-brand-blue mb-3">GUARDIA DIGITAL (Tareas hoy! da click encima)</h2>
-                <div id="tareas-digitales" class="flex flex-wrap gap-2 mb-0">
-                    <p class="text-xs text-gray-400 italic">Cargando tareas...</p>
+        <header
+            class="bg-brand-yellow p-4 flex items-center justify-center border-b border-brand-yellow sticky top-0 z-10 shadow-sm">
+            <div class="flex items-center gap-2">
+                <img src="logo.webp" alt="Logo" class="h-10 w-auto">
+                <div class="text-center">
+                    <h1 class="font-black text-brand-blue leading-tight text-xl tracking-tight uppercase">Guardianes
+                        Colombia</h1>
+                    <p class="text-xs text-brand-red font-bold uppercase tracking-wider">Fajardo Presidente</p>
                 </div>
             </div>
-            <script>
-                async function cargarTareasDigitales() {
-    // Apuntamos al archivo en la misma carpeta
-    const archivoLocal = 'tareas.json'; 
-    const contenedor = document.getElementById('tareas-digitales');
+        </header>
+        <div id="offline-indicator" class="bg-red-600 text-white text-center text-xs py-1 hidden">
+            <i class="fa-solid fa-wifi"></i> Sin conexión a internet. Algunas funciones no están disponibles.
+        </div>
+        <main id="main-content" class="flex-1 overflow-y-auto pb-24 p-4 space-y-6">
 
-    try {
-        // Al ser local, la respuesta es casi instantánea
-        const response = await fetch(archivoLocal);
-        
-        if (!response.ok) throw new Error("No se encontró el archivo JSON");
-        
-        const tareas = await response.json();
+            <section id="page-inicio" class="page-content space-y-6">
+                <div
+                    class="rounded-xl overflow-hidden shadow-md relative bg-black aspect-video flex items-center justify-center group">
+                    <div id="playerYouTube"
+                        class="absolute inset-0 w-full h-full pointer-events-none opacity-0 transition-opacity duration-700">
+                    </div>
+                    <img id="posterVideo" src="https://img.youtube.com/vi/0mQry1Y_buI/maxresdefault.jpg"
+                        alt="Portada Video Campaña" class="absolute inset-0 w-full h-full object-cover opacity-80">
 
-        contenedor.innerHTML = ""; // Limpiar el "Cargando..."
-
-        tareas.forEach(tarea => {
-            const link = document.createElement('a');
-            link.href = tarea.url;
-            link.target = "_blank";
-            link.rel = "noopener noreferrer";
-            link.className = "bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center";
-            
-            link.innerHTML = `<i class="${tarea.icon} mr-1"></i>${tarea.text}`;
-            
-            contenedor.appendChild(link);
-        });
-
-    } catch (error) {
-        console.error("Error al leer tareas.json:", error);
-        contenedor.innerHTML = "<p class='text-xs text-red-500'>Tareas no disponibles hoy.</p>";
-    }
-}
-
-// Ejecutar al cargar la página
-document.addEventListener('DOMContentLoaded', cargarTareasDigitales);
-            </script>
-
-            <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-inner !mt-1">
-                <h2 class="font-bold text-sm text-brand-blue mb-3">HERRAMIENTAS GUARDIAN (Click encima para usarla)</h2>
-                <div class="flex flex-wrap gap-2 mb-2">
-                    <a href="https://adelante-con-fajardo.github.io/propuestas" target="_blank" rel="noopener noreferrer" class="bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center">
-                        <i class="fa-solid fa-comments mr-1"></i>Chatea con las propuestas
-                    </a>
-                    <a href="https://adelante-con-fajardo.github.io/perfil" target="_blank" rel="noopener noreferrer" class="bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center">
-                        <i class="fa-solid fa-image mr-1"></i>Marco perfil
-                    </a>
+                    <div id="overlayVideo" class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    <button id="btnPlayYT" onclick="reproducirVideoFajardo()"
+                        class="relative z-30 bg-brand-yellow/90 p-5 rounded-full backdrop-blur-sm hover:bg-brand-yellow transition duration-300 transform hover:scale-110 shadow-2xl group">
+                        <i
+                            class="fa-solid fa-play text-brand-blue text-3xl ml-1 group-hover:text-brand-red transition-colors"></i>
+                    </button>
                 </div>
-                <h2 class="font-bold text-sm text-brand-blue mb-3">SIGUE AL CANDIDATO (Click encima para seguir)</h2>
-                <div class="flex flex-wrap gap-2 mb-4">
-                    <a href="https://www.facebook.com/sergiofajardov" target="_blank" rel="noopener noreferrer" 
-                    class="bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center">
-                        <i class="fa-brands fa-facebook mr-1"></i>@SergioFajardo
-                    </a>
-                    <a href="https://twitter.com/sergio_fajardo" target="_blank" rel="noopener noreferrer" 
-                    class="bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center">
-                        <i class="fa-brands fa-twitter mr-1"></i>@Sergio_Fajardo
-                    </a>
-                    <a href="https://www.instagram.com/sergiofajardov" target="_blank" rel="noopener noreferrer" 
-                    class="bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center">
-                        <i class="fa-brands fa-instagram mr-1"></i>@SergioFajardoValderrama
-                    </a>
-                </div>
-                <h2 class="font-bold text-sm text-brand-blue mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-copy text-xs"></i> 
-                    NUMERALES A MOVER (Click para copiar)
-                </h2>
-                
-                <div class="flex flex-wrap gap-2 text-brand-red font-bold text-xs">
-                    <span onclick="copiarNumeral(this)" class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#FajardoPresidente</span>
-                    <span onclick="copiarNumeral(this)" class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#AdelanteConFajardo</span>
-                </div>
-
-                <div id="toast-copy" class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-4 py-2 rounded-full opacity-0 transition-opacity pointer-events-none z-50">
-                    ¡Copiado al portapapeles!
-                </div>
-
+                <script src="https://www.youtube.com/iframe_api"></script>
                 <script>
-                    function copiarNumeral(elemento) {
-                        const texto = elemento.innerText;
-                        
-                        // Copiar al portapapeles
-                        navigator.clipboard.writeText(texto).then(() => {
-                            // Mostrar confirmación visual (Toast)
-                            const toast = document.getElementById('toast-copy');
-                            toast.classList.remove('opacity-0');
-                            toast.classList.add('opacity-100');
+                    let player;
 
-                            // Feedback visual en el elemento clickeado
-                            const originalColor = elemento.style.color;
-                            elemento.classList.add('ring-2', 'ring-brand-blue');
-                            
-                            // Ocultar aviso después de 2 segundos
-                            setTimeout(() => {
-                                toast.classList.replace('opacity-100', 'opacity-0');
-                                elemento.classList.remove('ring-2', 'ring-brand-blue');
-                            }, 2000);
+                    // Se activa cuando la API de YouTube está lista
+                    function onYouTubeIframeAPIReady() {
+                        player = new YT.Player('playerYouTube', {
+                            height: '100%',
+                            width: '100%',
+                            videoId: '0mQry1Y_buI', // Tu video: "¿Qué es ser un Guardián?"
+                            playerVars: {
+                                'autoplay': 0,
+                                'controls': 1,      // Mostramos controles una vez empiece para que el usuario pueda adelantar
+                                'rel': 0,           // No mostrar videos relacionados al final
+                                'modestbranding': 1,
+                                'playsinline': 1
+                            }
                         });
                     }
-                </script>
-            </div>
 
-            <div class="bg-brand-light p-4 rounded-xl border border-brand-yellow/30 !mt-1">
-                <h2 class="font-bold text-sm text-brand-blue mb-3">KIT DE CAMPAÑA</h2>
-                <div class="grid grid-cols-3 gap-2">
-                    <button onclick="abrirModal('imagenes')" class="bg-white p-4 rounded-lg shadow-sm flex flex-col items-center gap-2 active:bg-gray-50 transition border border-gray-100">
-                        <i class="fa-solid fa-images text-brand-red text-2xl"></i>
-                        <span class="text-xs font-semibold text-gray-700">Imágenes</span>
-                    </button>
-                    <button onclick="abrirModal('videos')" class="bg-white p-4 rounded-lg shadow-sm flex flex-col items-center gap-2 active:bg-gray-50 transition border border-gray-100">
-                        <i class="fa-solid fa-circle-play text-brand-blue text-2xl"></i>
-                        <span class="text-xs font-semibold text-gray-700">Videos</span>
-                    </button>
-                    <button onclick="abrirModal('pdf')" class="bg-white p-4 rounded-lg shadow-sm flex flex-col items-center gap-2 active:bg-gray-50 transition border border-gray-100">
-                        <i class="fa-regular fa-file-pdf text-brand-red text-2xl"></i>
-                        <span class="text-xs font-semibold text-gray-700">Folletos</span>
-                    </button>
-                    <button onclick="abrirModal('youtube')" class="bg-white p-4 rounded-lg shadow-sm flex flex-col items-center gap-2 active:bg-gray-50 transition border border-gray-100">
-                        <i class="fa-brands fa-youtube text-red-600 text-2xl"></i>
-                        <span class="text-xs font-semibold text-gray-700">YouTube</span>
-                    </button>
+                    function reproducirVideoFajardo() {
+                        if (player && player.playVideo) {
+                            // Ejecutar el video
+                            player.playVideo();
+
+                            // Referencias de interfaz
+                            const ytContainer = document.getElementById('playerYouTube');
+                            const poster = document.getElementById('posterVideo');
+                            const overlay = document.getElementById('overlayVideo');
+                            const btn = document.getElementById('btnPlayYT');
+
+                            // 1. Mostrar el video y permitir que reciba clics
+                            ytContainer.style.opacity = "1";
+                            ytContainer.style.pointerEvents = "auto";
+
+                            // 2. Desvanecer visualmente los elementos frontales
+                            poster.style.opacity = "0";
+                            overlay.style.opacity = "0";
+                            btn.style.transform = "scale(0)";
+
+                            // 3. ¡SOLUCIÓN! Quitar la interacción física de los elementos frontales
+                            // Esto permite que los clics "pasen a través" de ellos hacia el video
+                            poster.style.pointerEvents = "none";
+                            overlay.style.pointerEvents = "none";
+                            btn.style.pointerEvents = "none";
+
+                            // 4. Opcional: Ocultarlos completamente tras la animación para mayor limpieza
+                            setTimeout(() => {
+                                btn.style.display = "none";
+                                poster.style.display = "none";
+                                overlay.style.display = "none";
+                            }, 700); // Usamos 700ms para coincidir con tu transition duration-700
+                        }
+                    }
+                </script>
+
+                <div class="bg-brand-blue text-white p-2 text-xs font-medium text-center rounded-lg shadow-sm !mt-1">
+                    Un mensaje de Sergio Fajardo para todos los Guardianes.
                 </div>
 
-                <div id="modalDescargas" class="hidden fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-fade-in">
-                        <div class="p-4 border-b flex justify-between items-center bg-gray-50">
-                            <h3 id="modalTitulo" class="font-bold text-brand-blue uppercase text-sm tracking-widest"></h3>
-                            <button onclick="cerrarModal()" class="text-gray-400 hover:text-brand-red transition-colors">
-                                <i class="fa-solid fa-circle-xmark text-2xl"></i>
-                            </button>
-                        </div>
-                        <div id="modalContenido" class="p-4 grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto bg-gray-50/50">
-                            </div>
-                        <div class="p-4 bg-white text-center text-[10px] text-gray-400 font-medium">
-                            Pulsa el icono para descargar el archivo
-                        </div>
+                <div class="bg-white p-4 rounded-xl border border-brand-yellow/30 !mt-2">
+                    <h2 class="font-bold text-sm text-brand-blue mb-3">GUARDIA DIGITAL (Tareas hoy! da click encima)
+                    </h2>
+                    <div id="tareas-digitales" class="flex flex-wrap gap-2 mb-0">
+                        <p class="text-xs text-gray-400 italic">Cargando tareas...</p>
                     </div>
                 </div>
+                <script>
+                    async function cargarTareasDigitales() {
+                        // Apuntamos al archivo en la misma carpeta
+                        const archivoLocal = 'tareas.json';
+                        const contenedor = document.getElementById('tareas-digitales');
 
-                <div id="modalPreview" class="hidden fixed inset-0 z-[250] bg-black/90 flex flex-col items-center justify-center p-4 backdrop-blur-md">
-                    <button onclick="cerrarPreview()" class="absolute top-6 right-6 text-white hover:text-brand-yellow transition-transform hover:scale-125">
-                        <i class="fa-solid fa-circle-xmark text-4xl"></i>
-                    </button>
-                    
-                    <div id="contenedorPreview" class="w-full max-w-lg flex items-center justify-center rounded-xl overflow-hidden shadow-2xl">
-                        </div>
+                        try {
+                            // Al ser local, la respuesta es casi instantánea
+                            const response = await fetch(archivoLocal);
 
-                    <div class="mt-6 flex gap-4">
-                        <a id="btnDescargaDirecta" href="#" download class="bg-brand-yellow text-brand-blue px-6 py-3 rounded-full font-black uppercase text-xs flex items-center gap-2 shadow-lg">
-                            <i class="fa-solid fa-download"></i> Descargar ahora
+                            if (!response.ok) throw new Error("No se encontró el archivo JSON");
+
+                            const tareas = await response.json();
+
+                            contenedor.innerHTML = ""; // Limpiar el "Cargando..."
+
+                            tareas.forEach(tarea => {
+                                const link = document.createElement('a');
+                                link.href = tarea.url;
+                                link.target = "_blank";
+                                link.rel = "noopener noreferrer";
+                                link.className = "bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center";
+
+                                link.innerHTML = `<i class="${tarea.icon} mr-1"></i>${tarea.text}`;
+
+                                contenedor.appendChild(link);
+                            });
+
+                        } catch (error) {
+                            console.error("Error al leer tareas.json:", error);
+                            contenedor.innerHTML = "<p class='text-xs text-red-500'>Tareas no disponibles hoy.</p>";
+                        }
+                    }
+
+                    // Ejecutar al cargar la página
+                    document.addEventListener('DOMContentLoaded', cargarTareasDigitales);
+                </script>
+
+                <div class="bg-white p-4 rounded-xl border border-gray-100 shadow-inner !mt-1">
+                    <h2 class="font-bold text-sm text-brand-blue mb-3">HERRAMIENTAS GUARDIAN (Click encima para usarla)
+                    </h2>
+                    <div class="flex flex-wrap gap-2 mb-2">
+                        <a href="https://adelante-con-fajardo.github.io/propuestas" target="_blank"
+                            rel="noopener noreferrer"
+                            class="bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center">
+                            <i class="fa-solid fa-comments mr-1"></i>Chatea con las propuestas
+                        </a>
+                        <a href="https://adelante-con-fajardo.github.io/perfil" target="_blank"
+                            rel="noopener noreferrer"
+                            class="bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center">
+                            <i class="fa-solid fa-image mr-1"></i>Marco perfil
                         </a>
                     </div>
+                    <h2 class="font-bold text-sm text-brand-blue mb-3">SIGUE AL CANDIDATO (Click encima para seguir)
+                    </h2>
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <a href="https://www.facebook.com/sergiofajardov" target="_blank" rel="noopener noreferrer"
+                            class="bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center">
+                            <i class="fa-brands fa-facebook mr-1"></i>@SergioFajardo
+                        </a>
+                        <a href="https://twitter.com/sergio_fajardo" target="_blank" rel="noopener noreferrer"
+                            class="bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center">
+                            <i class="fa-brands fa-twitter mr-1"></i>@Sergio_Fajardo
+                        </a>
+                        <a href="https://www.instagram.com/sergiofajardov" target="_blank" rel="noopener noreferrer"
+                            class="bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center">
+                            <i class="fa-brands fa-instagram mr-1"></i>@SergioFajardoValderrama
+                        </a>
+                    </div>
+                    <h2 class="font-bold text-sm text-brand-blue mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-copy text-xs"></i>
+                        NUMERALES A MOVER (Click para copiar)
+                    </h2>
+
+                    <div class="flex flex-wrap gap-2 text-brand-red font-bold text-xs">
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#FajardoPresidente</span>
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#AdelanteConFajardo</span>
+                    </div>
+
+                    <div id="toast-copy"
+                        class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-4 py-2 rounded-full opacity-0 transition-opacity pointer-events-none z-50">
+                        ¡Copiado al portapapeles!
+                    </div>
+
+                    <script>
+                        function copiarNumeral(elemento) {
+                            const texto = elemento.innerText;
+
+                            // Copiar al portapapeles
+                            navigator.clipboard.writeText(texto).then(() => {
+                                // Mostrar confirmación visual (Toast)
+                                const toast = document.getElementById('toast-copy');
+                                toast.classList.remove('opacity-0');
+                                toast.classList.add('opacity-100');
+
+                                // Feedback visual en el elemento clickeado
+                                const originalColor = elemento.style.color;
+                                elemento.classList.add('ring-2', 'ring-brand-blue');
+
+                                // Ocultar aviso después de 2 segundos
+                                setTimeout(() => {
+                                    toast.classList.replace('opacity-100', 'opacity-0');
+                                    elemento.classList.remove('ring-2', 'ring-brand-blue');
+                                }, 2000);
+                            });
+                        }
+                    </script>
                 </div>
-            </div>
-<script>
-    // 1. Abrir lista de archivos (AHORA DINÁMICO)
-async function abrirModal(tipo) {
-    const modal = document.getElementById('modalDescargas');
-    const contenido = document.getElementById('modalContenido');
-    
-    // Títulos amigables
-    const titulos = {
-        'imagenes': 'Imágenes',
-        'videos': 'Videos Internos',
-        'pdf': 'Folletos y Guías',
-        'youtube': 'Videos de YouTube'
-    };
 
-    document.getElementById('modalTitulo').innerText = titulos[tipo] || tipo;
-    contenido.innerHTML = '<div class="text-center p-6 text-gray-400"><i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i><br>Cargando...</div>';
-    modal.classList.remove('hidden');
+                <div class="bg-brand-light p-4 rounded-xl border border-brand-yellow/30 !mt-1">
+                    <h2 class="font-bold text-sm text-brand-blue mb-3">KIT DE CAMPAÑA</h2>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="abrirModal('imagenes')"
+                            class="bg-white p-4 rounded-lg shadow-sm flex flex-col items-center gap-2 active:bg-gray-50 transition border border-gray-100">
+                            <i class="fa-solid fa-images text-brand-red text-2xl"></i>
+                            <span class="text-xs font-semibold text-gray-700">Imágenes</span>
+                        </button>
+                        <button onclick="abrirModal('videos')"
+                            class="bg-white p-4 rounded-lg shadow-sm flex flex-col items-center gap-2 active:bg-gray-50 transition border border-gray-100">
+                            <i class="fa-solid fa-circle-play text-brand-blue text-2xl"></i>
+                            <span class="text-xs font-semibold text-gray-700">Videos</span>
+                        </button>
+                        <button onclick="abrirModal('pdf')"
+                            class="bg-white p-4 rounded-lg shadow-sm flex flex-col items-center gap-2 active:bg-gray-50 transition border border-gray-100">
+                            <i class="fa-regular fa-file-pdf text-brand-red text-2xl"></i>
+                            <span class="text-xs font-semibold text-gray-700">Folletos</span>
+                        </button>
+                        <button onclick="abrirModal('youtube')"
+                            class="bg-white p-4 rounded-lg shadow-sm flex flex-col items-center gap-2 active:bg-gray-50 transition border border-gray-100">
+                            <i class="fa-brands fa-youtube text-red-600 text-2xl"></i>
+                            <span class="text-xs font-semibold text-gray-700">YouTube</span>
+                        </button>
+                    </div>
 
-    const { data, error } = await supabaseApp.from(tipo).select('*').order('created_at', { ascending: false });
+                    <div id="modalDescargas"
+                        class="hidden fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm">
+                        <div
+                            class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-fade-in">
+                            <div class="p-4 border-b flex justify-between items-center bg-gray-50">
+                                <h3 id="modalTitulo"
+                                    class="font-bold text-brand-blue uppercase text-sm tracking-widest"></h3>
+                                <button onclick="cerrarModal()"
+                                    class="text-gray-400 hover:text-brand-red transition-colors">
+                                    <i class="fa-solid fa-circle-xmark text-2xl"></i>
+                                </button>
+                            </div>
+                            <div id="modalContenido"
+                                class="p-4 grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto bg-gray-50/50">
+                            </div>
+                            <div class="p-4 bg-white text-center text-[10px] text-gray-400 font-medium">
+                                Pulsa el icono para descargar el archivo
+                            </div>
+                        </div>
+                    </div>
 
-    if (error) {
-        contenido.innerHTML = `<div class="text-red-500 text-center p-4">Error: Tabla '${tipo}' no encontrada.</div>`;
-        return;
-    }
+                    <div id="modalPreview"
+                        class="hidden fixed inset-0 z-[250] bg-black/90 flex flex-col items-center justify-center p-4 backdrop-blur-md">
+                        <button onclick="cerrarPreview()"
+                            class="absolute top-6 right-6 text-white hover:text-brand-yellow transition-transform hover:scale-125">
+                            <i class="fa-solid fa-circle-xmark text-4xl"></i>
+                        </button>
 
-    contenido.innerHTML = '';
-    data.forEach(item => {
-        // Seleccionar icono
-        let icono = 'fa-image';
-        if (tipo === 'videos' || tipo === 'youtube') icono = 'fa-play-circle';
-        if (tipo === 'pdf') icono = 'fa-file-pdf';
+                        <div id="contenedorPreview"
+                            class="w-full max-w-lg flex items-center justify-center rounded-xl overflow-hidden shadow-2xl">
+                        </div>
 
-        // Para YouTube, el "source" será el video_id
-        const source = tipo === 'youtube' ? item.video_id : item.preview;
+                        <div class="mt-6 flex gap-4">
+                            <a id="btnDescargaDirecta" href="#" download
+                                class="bg-brand-yellow text-brand-blue px-6 py-3 rounded-full font-black uppercase text-xs flex items-center gap-2 shadow-lg">
+                                <i class="fa-solid fa-download"></i> Descargar ahora
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <script>
+                    // 1. Abrir lista de archivos (AHORA DINÁMICO)
+                    async function abrirModal(tipo) {
+                        const modal = document.getElementById('modalDescargas');
+                        const contenido = document.getElementById('modalContenido');
+                        const titulos = {
+                            'imagenes': 'Imágenes',
+                            'videos': 'Videos Internos',
+                            'pdf': 'Folletos y Guías',
+                            'youtube': 'Videos de YouTube'
+                        };
+                        document.getElementById('modalTitulo').innerText = titulos[tipo] || tipo;
+                        contenido.innerHTML = '<div class="text-center p-6 text-gray-400"><i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i><br>Cargando...</div>';
+                        modal.classList.remove('hidden');
 
-        contenido.innerHTML += `
+                        let data = [];
+
+                        // Intentar obtener datos online primero
+                        if (navigator.onLine) {
+                            const { data: fetched, error } = await supabaseApp.from(tipo).select('*').order('created_at', { ascending: false });
+                            if (!error && fetched) {
+                                data = fetched;
+                                // Guardar en localStorage para offline
+                                localStorage.setItem(`kit_${tipo}`, JSON.stringify(data));
+                            } else {
+                                // Si falla la consulta online, usar caché
+                                const cached = localStorage.getItem(`kit_${tipo}`);
+                                if (cached) data = JSON.parse(cached);
+                            }
+                        } else {
+                            // Offline: usar caché
+                            const cached = localStorage.getItem(`kit_${tipo}`);
+                            if (cached) data = JSON.parse(cached);
+                        }
+
+                        contenido.innerHTML = '';
+                        if (data.length === 0) {
+                            contenido.innerHTML = '<div class="text-center p-4 text-gray-400">No hay contenido disponible offline.</div>';
+                            return;
+                        }
+
+                        data.forEach(item => {
+                            let icono = 'fa-image';
+                            if (tipo === 'videos' || tipo === 'youtube') icono = 'fa-play-circle';
+                            if (tipo === 'pdf') icono = 'fa-file-pdf';
+
+                            const source = tipo === 'youtube' ? item.video_id : item.preview;
+
+                            contenido.innerHTML += `
             <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between hover:border-brand-yellow transition cursor-pointer mb-2" 
                 onclick="lanzarPreview('${tipo}', '${source}', '${item.link}')">
                 <div class="flex items-center gap-3">
@@ -403,195 +467,200 @@ async function abrirModal(tipo) {
                 <div class="text-brand-red p-2"><i class="fa-solid fa-eye text-sm"></i></div>
             </div>
         `;
-    });
-}
-// 2. CERRAR lista de archivos
-function cerrarModal() {
-    document.getElementById('modalDescargas').classList.add('hidden');
-}
+                        });
+                    }
+                    // 2. CERRAR lista de archivos
+                    function cerrarModal() {
+                        document.getElementById('modalDescargas').classList.add('hidden');
+                    }
 
-// 3. Lanzar Previsualización
-function lanzarPreview(tipo, source, downloadLink) {
-    const previewModal = document.getElementById('modalPreview');
-    const contenedor = document.getElementById('contenedorPreview');
-    const btnDescarga = document.getElementById('btnDescargaDirecta');
+                    // 3. Lanzar Previsualización
+                    function lanzarPreview(tipo, source, downloadLink) {
+                        const previewModal = document.getElementById('modalPreview');
+                        const contenedor = document.getElementById('contenedorPreview');
+                        const btnDescarga = document.getElementById('btnDescargaDirecta');
 
-    btnDescarga.href = downloadLink;
-    contenedor.innerHTML = ''; 
+                        btnDescarga.href = downloadLink;
+                        contenedor.innerHTML = '';
 
-    if (tipo === 'imagenes') {
-        contenedor.innerHTML = `<img src="${source}" class="max-w-full max-h-[70vh] rounded-lg shadow-2xl">`;
-    } 
-    else if (tipo === 'videos') {
-        // Video de Storage (MP4)
-        contenedor.innerHTML = `
+                        if (tipo === 'imagenes') {
+                            contenedor.innerHTML = `<img src="${source}" class="max-w-full max-h-[70vh] rounded-lg shadow-2xl">`;
+                        }
+                        else if (tipo === 'videos') {
+                            // Video de Storage (MP4)
+                            contenedor.innerHTML = `
             <div class="w-full bg-black rounded-2xl overflow-hidden shadow-2xl border-2 border-gray-800">
                 <video controls autoplay class="w-full max-h-[70vh] outline-none">
                     <source src="${source}" type="video/mp4">
                 </video>
             </div>`;
-    } 
-    else if (tipo === 'youtube') {
-        // Video de YouTube (Iframe)
-        contenedor.innerHTML = `
+                        }
+                        else if (tipo === 'youtube') {
+                            // Video de YouTube (Iframe)
+                            contenedor.innerHTML = `
             <div class="aspect-video w-full bg-black rounded-xl overflow-hidden shadow-2xl">
                 <iframe width="100%" height="100%" src="https://www.youtube.com/embed/${source}?autoplay=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
             </div>`;
-    }
-    else if (tipo === 'pdf') {
-        contenedor.innerHTML = `<iframe src="https://docs.google.com/viewer?url=${encodeURIComponent(source)}&embedded=true" class="w-full h-[60vh] rounded-xl shadow-2xl bg-white"></iframe>`;
-    }
+                        }
+                        else if (tipo === 'pdf') {
+                            contenedor.innerHTML = `<iframe src="https://docs.google.com/viewer?url=${encodeURIComponent(source)}&embedded=true" class="w-full h-[60vh] rounded-xl shadow-2xl bg-white"></iframe>`;
+                        }
 
-    previewModal.classList.remove('hidden');
-}
-// 4. Cerrar Previsualización
-function cerrarPreview() {
-    const previewModal = document.getElementById('modalPreview');
-    const contenedor = document.getElementById('contenedorPreview');
-    
-    previewModal.classList.add('hidden');
-    // Vaciamos el contenedor para detener la reproducción de videos si estaban activos
-    setTimeout(() => { contenedor.innerHTML = ''; }, 300); 
-}
+                        previewModal.classList.remove('hidden');
+                    }
+                    // 4. Cerrar Previsualización
+                    function cerrarPreview() {
+                        const previewModal = document.getElementById('modalPreview');
+                        const contenedor = document.getElementById('contenedorPreview');
 
-// Listener para cerrar al tocar el fondo (modal descargas)
-document.getElementById('modalDescargas').addEventListener('click', function(e) {
-    if (e.target === this) cerrarModal();
-});
+                        previewModal.classList.add('hidden');
+                        // Vaciamos el contenedor para detener la reproducción de videos si estaban activos
+                        setTimeout(() => { contenedor.innerHTML = ''; }, 300);
+                    }
 
-// Listener para cerrar al tocar el fondo (modal preview)
-document.getElementById('modalPreview').addEventListener('click', function(e) {
-    if (e.target === this) cerrarPreview();
-});
-</script>
-        </section>
+                    // Listener para cerrar al tocar el fondo (modal descargas)
+                    document.getElementById('modalDescargas').addEventListener('click', function (e) {
+                        if (e.target === this) cerrarModal();
+                    });
 
-    <section id="page-calendario" class="page-content hidden-page space-y-4">
-        <div class="flex justify-between items-center mb-1 px-1">
-            <h2 class="font-bold text-sm text-brand-blue uppercase">PRÓXIMAS ACTIVIDADES</h2>
-            <i class="fa-solid fa-calendar-days text-gray-400"></i>
-        </div>
-        
-        <div id="contenedor-eventos" class="space-y-4">
-            <div class="text-center text-gray-400 text-xs py-4">
-                <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i><br>
-                Cargando eventos...
-            </div>
-        </div>
-    </section>
-    <div id="modalDetallesEvento" class="hidden fixed inset-0 z-[400] bg-black/70 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
-            <div class="w-full h-48 bg-gray-200 relative">
-                <iframe id="mapaEvento" class="w-full h-full border-0" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-                <button onclick="cerrarDetalles()" class="absolute top-3 right-3 bg-white/90 text-gray-800 w-8 h-8 rounded-full shadow-lg flex items-center justify-center hover:bg-brand-red hover:text-white transition">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
+                    // Listener para cerrar al tocar el fondo (modal preview)
+                    document.getElementById('modalPreview').addEventListener('click', function (e) {
+                        if (e.target === this) cerrarPreview();
+                    });
+                </script>
+            </section>
 
-            <div class="p-5">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h3 id="detallesTitulo" class="font-black text-xl text-brand-blue leading-tight uppercase"></h3>
-                        <p id="detallesFecha" class="text-brand-red font-bold text-sm"></p>
-                    </div>
-                    <div class="bg-brand-light p-2 rounded-lg text-center min-w-[60px]">
-                        <i class="fa-solid fa-clock text-brand-blue block mb-1"></i>
-                        <span id="detallesHora" class="text-[10px] font-bold text-brand-blue uppercase"></span>
-                    </div>
+            <section id="page-calendario" class="page-content hidden-page space-y-4">
+                <div class="flex justify-between items-center mb-1 px-1">
+                    <h2 class="font-bold text-sm text-brand-blue uppercase">PRÓXIMAS ACTIVIDADES</h2>
+                    <i class="fa-solid fa-calendar-days text-gray-400"></i>
                 </div>
 
-                <div class="space-y-3 mb-6">
-                    <div class="flex items-start gap-3">
-                        <i class="fa-solid fa-map-location-dot text-gray-400 mt-1"></i>
-                        <p id="detallesDireccion" class="text-sm text-gray-600 font-medium"></p>
-                    </div>
-                    <div class="flex items-start gap-3">
-                        <i class="fa-solid fa-circle-info text-gray-400 mt-1"></i>
-                        <p id="detallesDescripcion" class="text-xs text-gray-500 leading-relaxed"></p>
+                <div id="contenedor-eventos" class="space-y-4">
+                    <div class="text-center text-gray-400 text-xs py-4">
+                        <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i><br>
+                        Cargando eventos...
                     </div>
                 </div>
+            </section>
+            <div id="modalDetallesEvento"
+                class="hidden fixed inset-0 z-[400] bg-black/70 flex items-center justify-center p-4 backdrop-blur-sm">
+                <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
+                    <div class="w-full h-48 bg-gray-200 relative">
+                        <iframe id="mapaEvento" class="w-full h-full border-0" allowfullscreen="" loading="lazy"
+                            referrerpolicy="no-referrer-when-downgrade"></iframe>
+                        <button onclick="cerrarDetalles()"
+                            class="absolute top-3 right-3 bg-white/90 text-gray-800 w-8 h-8 rounded-full shadow-lg flex items-center justify-center hover:bg-brand-red hover:text-white transition">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
 
-                <button onclick="cerrarDetalles()" class="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold text-sm hover:bg-gray-200 transition">
-                    Entendido
-                </button>
+                    <div class="p-5">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 id="detallesTitulo"
+                                    class="font-black text-xl text-brand-blue leading-tight uppercase"></h3>
+                                <p id="detallesFecha" class="text-brand-red font-bold text-sm"></p>
+                            </div>
+                            <div class="bg-brand-light p-2 rounded-lg text-center min-w-[60px]">
+                                <i class="fa-solid fa-clock text-brand-blue block mb-1"></i>
+                                <span id="detallesHora" class="text-[10px] font-bold text-brand-blue uppercase"></span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 mb-6">
+                            <div class="flex items-start gap-3">
+                                <i class="fa-solid fa-map-location-dot text-gray-400 mt-1"></i>
+                                <p id="detallesDireccion" class="text-sm text-gray-600 font-medium"></p>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <i class="fa-solid fa-circle-info text-gray-400 mt-1"></i>
+                                <p id="detallesDescripcion" class="text-xs text-gray-500 leading-relaxed"></p>
+                            </div>
+                        </div>
+
+                        <button onclick="cerrarDetalles()"
+                            class="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold text-sm hover:bg-gray-200 transition">
+                            Entendido
+                        </button>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-   <script>
-    // Variable global para guardar los datos y usarlos cuando abran el modal
-    let eventosData = {};
-    async function cargarEventos() {
-        // 1. Obtenemos los eventos (esto ya lo tenías)
-        const { data: eventos, error: eventosError } = await supabaseApp
-            .from('eventos')
-            .select('*')
-            .order('id', { ascending: true });
+            <script>
+                // Variable global para guardar los datos y usarlos cuando abran el modal
+                let eventosData = {};
+                async function cargarEventos() {
+                    // 1. Obtenemos los eventos (esto ya lo tenías)
+                    const { data: eventos, error: eventosError } = await supabaseApp
+                        .from('eventos')
+                        .select('*')
+                        .order('id', { ascending: true });
 
-        if (eventosError) {
-            console.error("Error al cargar eventos:", eventosError);
-            document.getElementById('contenedor-eventos').innerHTML = 
-                '<p class="text-center text-brand-red text-xs mt-4 font-bold">Error al cargar el calendario.</p>';
-            return;
-        }
+                    if (eventosError) {
+                        console.error("Error al cargar eventos:", eventosError);
+                        document.getElementById('contenedor-eventos').innerHTML =
+                            '<p class="text-center text-brand-red text-xs mt-4 font-bold">Error al cargar el calendario.</p>';
+                        return;
+                    }
 
-        const contenedor = document.getElementById('contenedor-eventos');
-        contenedor.innerHTML = '';
+                    const contenedor = document.getElementById('contenedor-eventos');
+                    contenedor.innerHTML = '';
 
-        if (eventos.length === 0) {
-            contenedor.innerHTML = '<p class="text-center text-gray-500 text-xs mt-4">No hay eventos programados en este momento.</p>';
-            return;
-        }
+                    if (eventos.length === 0) {
+                        contenedor.innerHTML = '<p class="text-center text-gray-500 text-xs mt-4">No hay eventos programados en este momento.</p>';
+                        return;
+                    }
 
-        // 2. NUEVO: Obtenemos el usuario actual
-        const { data: { user } } = await supabaseApp.auth.getUser();
+                    // 2. NUEVO: Obtenemos el usuario actual
+                    const { data: { user } } = await supabaseApp.auth.getUser();
 
-        // 3. NUEVO: Si hay un usuario, buscamos en qué eventos ya está registrado
-        let misEventosRegistrados = new Set(); // Usamos un Set para búsquedas rápidas
-        
-        if (user) {
-            const { data: registros, error: registrosError } = await supabaseApp
-                .from('registros_eventos')
-                .select('evento_id')
-                .eq('voluntario_id', user.id);
+                    // 3. NUEVO: Si hay un usuario, buscamos en qué eventos ya está registrado
+                    let misEventosRegistrados = new Set(); // Usamos un Set para búsquedas rápidas
 
-            if (!registrosError && registros) {
-                // Guardamos los IDs de los eventos donde ya se registró
-                registros.forEach(registro => misEventosRegistrados.add(registro.evento_id));
-            }
-        }
+                    if (user) {
+                        const { data: registros, error: registrosError } = await supabaseApp
+                            .from('registros_eventos')
+                            .select('evento_id')
+                            .eq('voluntario_id', user.id);
 
-        // 4. Dibujamos las tarjetas
-        eventos.forEach(evento => {
-            eventosData[evento.id] = evento;
-            
-            let dia = "00", mes = "---";
-            const palabrasFecha = evento.fecha.split(' ');
-            if (palabrasFecha.length) {
-                dia = palabrasFecha[1]; 
-                mes = palabrasFecha[3].substring(0, 3); 
-            }
-            
-            const direccionCorta = evento.direccion ? evento.direccion.split(',')[0] : 'Ubicación por definir';
+                        if (!registrosError && registros) {
+                            // Guardamos los IDs de los eventos donde ya se registró
+                            registros.forEach(registro => misEventosRegistrados.add(registro.evento_id));
+                        }
+                    }
 
-            // 5. NUEVO: Decidimos qué botón mostrar basándonos en si el ID del evento está en 'misEventosRegistrados'
-            let botonHTML = '';
-            if (misEventosRegistrados.has(evento.id)) {
-                // Si ya está registrado, mostramos el texto verde
-                botonHTML = `
+                    // 4. Dibujamos las tarjetas
+                    eventos.forEach(evento => {
+                        eventosData[evento.id] = evento;
+
+                        let dia = "00", mes = "---";
+                        const palabrasFecha = evento.fecha.split(' ');
+                        if (palabrasFecha.length) {
+                            dia = palabrasFecha[1];
+                            mes = palabrasFecha[3].substring(0, 3);
+                        }
+
+                        const direccionCorta = evento.direccion ? evento.direccion.split(',')[0] : 'Ubicación por definir';
+
+                        // 5. NUEVO: Decidimos qué botón mostrar basándonos en si el ID del evento está en 'misEventosRegistrados'
+                        let botonHTML = '';
+                        if (misEventosRegistrados.has(evento.id)) {
+                            // Si ya está registrado, mostramos el texto verde
+                            botonHTML = `
                     <span class="text-[10px] text-green-600 font-black uppercase flex items-center">
                         <i class="fa-solid fa-check-circle mr-1"></i> Registrado
                     </span>
                 `;
-            } else {
-                // Si NO está registrado, mostramos el botón rojo habitual
-                botonHTML = `
+                        } else {
+                            // Si NO está registrado, mostramos el botón rojo habitual
+                            botonHTML = `
                     <button onclick="registrarEvento(this, ${evento.id})" class="bg-brand-red text-white text-xs px-4 py-1.5 rounded-md font-bold shadow-sm transition-all active:scale-95">
                         Registro
                     </button>
                 `;
-            }
+                        }
 
-            const tarjetaHTML = `
+                        const tarjetaHTML = `
                 <div class="bg-white border border-gray-200 p-3 rounded-xl shadow-sm flex items-center gap-4 animate-fade-in">
                     <div class="flex flex-col items-center justify-center bg-brand-light text-brand-blue rounded-lg p-2 min-w-[3.5rem] shadow-inner border border-brand-yellow/30">
                         <span class="text-[10px] uppercase font-bold tracking-widest">${mes}</span>
@@ -606,199 +675,207 @@ document.getElementById('modalPreview').addEventListener('click', function(e) {
                     </div>
                 </div>
             `;
-            contenedor.innerHTML += tarjetaHTML;
-        });
-    }
-    // 3. Función para abrir detalles (Modificada para usar la base de datos)
-    function verDetalles(id) {
-        const data = eventosData[id];
-        if (!data) return;
-
-        document.getElementById('detallesTitulo').innerText = data.titulo || '';
-        document.getElementById('detallesFecha').innerText = data.fecha || '';
-        document.getElementById('detallesHora').innerText = data.hora || '';
-        document.getElementById('detallesDireccion').innerText = data.direccion || '';
-        document.getElementById('detallesDescripcion').innerText = data.descripcion || '';
-        
-        // Asignar el mapa (si existe)
-        const iframeMapa = document.getElementById('mapaEvento');
-        if (data.mapa) {
-            iframeMapa.src = data.mapa;
-            iframeMapa.style.display = "block";
-        } else {
-            iframeMapa.style.display = "none";
-        }
-
-        document.getElementById('modalDetallesEvento').classList.remove('hidden');
-    }
-
-    function cerrarDetalles() {
-        document.getElementById('modalDetallesEvento').classList.add('hidden');
-        document.getElementById('mapaEvento').src = ""; 
-    }
-
-  async function registrarEvento(boton, eventoId) {
-    try {
-        // 1. Deshabilitar el botón temporalmente para evitar múltiples clics
-        boton.disabled = true;
-        const textoOriginal = boton.innerText;
-        boton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-
-        // 2. Obtener el usuario autenticado actualmente
-        const { data: { user }, error: authError } = await supabaseApp.auth.getUser();
-
-        if (authError || !user) {
-            alert("Debes iniciar sesión para registrarte en un evento.");
-            boton.disabled = false;
-            boton.innerHTML = textoOriginal;
-            return;
-        }
-
-        // 3. Hacer el INSERT en la base de datos
-        const { error: insertError } = await supabaseApp
-            .from('registros_eventos')
-            .insert([
-                { 
-                    voluntario_id: user.id, 
-                    evento_id: eventoId 
+                        contenedor.innerHTML += tarjetaHTML;
+                    });
                 }
-            ]);
+                // 3. Función para abrir detalles (Modificada para usar la base de datos)
+                function verDetalles(id) {
+                    const data = eventosData[id];
+                    if (!data) return;
 
-        if (insertError) {
-            // Manejar error (por ejemplo, si ya estaba registrado y tienes una restricción de unicidad)
-            console.error("Error al guardar el registro:", insertError);
-            alert("Hubo un problema al procesar tu registro. Por favor, intenta de nuevo.");
-            boton.disabled = false;
-            boton.innerHTML = textoOriginal;
-            return;
-        }
+                    document.getElementById('detallesTitulo').innerText = data.titulo || '';
+                    document.getElementById('detallesFecha').innerText = data.fecha || '';
+                    document.getElementById('detallesHora').innerText = data.hora || '';
+                    document.getElementById('detallesDireccion').innerText = data.direccion || '';
+                    document.getElementById('detallesDescripcion').innerText = data.descripcion || '';
 
-        // 4. Éxito: Ejecutar la animación y cambio de estado visual
-        boton.classList.add('scale-0', 'opacity-0');
-        setTimeout(() => {
-            boton.style.display = 'none';
-            const confirmacion = document.createElement('span');
-            confirmacion.className = "text-[10px] text-green-600 font-black uppercase flex items-center animate-fade-in";
-            confirmacion.innerHTML = '<i class="fa-solid fa-check-circle mr-1"></i> Registrado';
-            boton.parentNode.prepend(confirmacion);
-        }, 300);
+                    // Asignar el mapa (si existe)
+                    const iframeMapa = document.getElementById('mapaEvento');
+                    if (data.mapa) {
+                        iframeMapa.src = data.mapa;
+                        iframeMapa.style.display = "block";
+                    } else {
+                        iframeMapa.style.display = "none";
+                    }
 
-    } catch (err) {
-        console.error("Error inesperado:", err);
-        alert("Ocurrió un error inesperado.");
-        boton.disabled = false;
-        boton.innerHTML = 'Registro';
-    }
-}
-    document.getElementById('modalDetallesEvento').addEventListener('click', function(e) {
-        if (e.target === this) cerrarDetalles();
-    });
+                    document.getElementById('modalDetallesEvento').classList.remove('hidden');
+                }
 
-    // ¡MUY IMPORTANTE! Cargar los eventos en cuanto la página esté lista
-    document.addEventListener('DOMContentLoaded', () => {
-        cargarEventos();
-    });
-</script>
+                function cerrarDetalles() {
+                    document.getElementById('modalDetallesEvento').classList.add('hidden');
+                    document.getElementById('mapaEvento').src = "";
+                }
 
-<!-- ==================== SECCIÓN ACCIONES (reemplaza tu sección actual) ==================== -->
-<section id="page-acciones" class="page-content hidden-page space-y-6">
-    <div class="mt-6 flex justify-center items-center">  
-        <h2 class="font-bold text-sm text-brand-blue mb-4 uppercase">ACCIONES DE TERRENO Y DIGITALES</h2> 
-        <button onclick="registrarAccion()" class="bg-white border-2 border-brand-red text-brand-red px-6 py-2 rounded-full text-sm font-bold shadow-sm hover:bg-brand-red hover:text-white transition-colors">
-            <i class="fa-solid fa-camera mr-2"></i>Registrar mi acción
-        </button>
-    </div>
-    <div class="border-l-2 border-brand-yellow ml-4 pl-5 space-y-6" id="feed-actividades">
-        <div class="text-center text-gray-400 text-xs py-4">
-            <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i><br>
-            Cargando acciones...
-        </div>
-    </div>
-</section>
-<div id="modalRegistro" class="hidden fixed inset-0 z-[300] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
-        <div class="p-4 border-b bg-brand-red text-white flex justify-between items-center">
-            <h3 class="font-bold uppercase text-sm tracking-widest">Registrar mi Acción</h3>
-            <button onclick="cerrarModalRegistro()" class="hover:rotate-90 transition-transform">
-                <i class="fa-solid fa-xmark text-xl"></i>
-            </button>
-        </div>
+                async function registrarEvento(boton, eventoId) {
+                    try {
+                        // 1. Deshabilitar el botón temporalmente para evitar múltiples clics
+                        boton.disabled = true;
+                        const textoOriginal = boton.innerText;
+                        boton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
 
-        <div class="p-6 space-y-4">
-            <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                <p class="text-[10px] uppercase text-gray-400 font-bold">Voluntario Activo</p>
-                <p id="infoUsuario" class="text-sm text-brand-blue font-bold"></p>
-            </div>
+                        // 2. Obtener el usuario autenticado actualmente
+                        const { data: { user }, error: authError } = await supabaseApp.auth.getUser();
 
-            <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1">¿QUÉ ACCIÓN REALIZASTE?</label>
-                <select id="selectAccion" class="w-full p-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-red outline-none">
-                    <option value="1">Volanteo pedagógico (10 pts)</option>
-                    <option value="2">Reunión vecinal (50 pts)</option>
-                    <option value="3">Inscripción voluntario (30 pts)</option>
-                    <option value="4">Debate en redes (5 pts)</option>
-                </select>
-            </div>
+                        if (authError || !user) {
+                            alert("Debes iniciar sesión para registrarte en un evento.");
+                            boton.disabled = false;
+                            boton.innerHTML = textoOriginal;
+                            return;
+                        }
 
-            <div class="grid grid-cols-2 gap-3">
-                <div class="relative">
-                    <label class="block text-xs font-bold text-gray-600 mb-1 text-center">FOTO / VIDEO</label>
-                    <input type="file" id="archivoEvidencia" class="hidden" accept="image/*,video/*">
-                    <button onclick="document.getElementById('archivoEvidencia').click()" class="w-full bg-gray-100 border-2 border-dashed border-gray-300 p-4 rounded-xl text-gray-400 hover:text-brand-red hover:border-brand-red transition">
-                        <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
+                        // 3. Hacer el INSERT en la base de datos
+                        const { error: insertError } = await supabaseApp
+                            .from('registros_eventos')
+                            .insert([
+                                {
+                                    voluntario_id: user.id,
+                                    evento_id: eventoId
+                                }
+                            ]);
+
+                        if (insertError) {
+                            // Manejar error (por ejemplo, si ya estaba registrado y tienes una restricción de unicidad)
+                            console.error("Error al guardar el registro:", insertError);
+                            alert("Hubo un problema al procesar tu registro. Por favor, intenta de nuevo.");
+                            boton.disabled = false;
+                            boton.innerHTML = textoOriginal;
+                            return;
+                        }
+
+                        // 4. Éxito: Ejecutar la animación y cambio de estado visual
+                        boton.classList.add('scale-0', 'opacity-0');
+                        setTimeout(() => {
+                            boton.style.display = 'none';
+                            const confirmacion = document.createElement('span');
+                            confirmacion.className = "text-[10px] text-green-600 font-black uppercase flex items-center animate-fade-in";
+                            confirmacion.innerHTML = '<i class="fa-solid fa-check-circle mr-1"></i> Registrado';
+                            boton.parentNode.prepend(confirmacion);
+                        }, 300);
+
+                    } catch (err) {
+                        console.error("Error inesperado:", err);
+                        alert("Ocurrió un error inesperado.");
+                        boton.disabled = false;
+                        boton.innerHTML = 'Registro';
+                    }
+                }
+                document.getElementById('modalDetallesEvento').addEventListener('click', function (e) {
+                    if (e.target === this) cerrarDetalles();
+                });
+
+                // ¡MUY IMPORTANTE! Cargar los eventos en cuanto la página esté lista
+                document.addEventListener('DOMContentLoaded', () => {
+                    cargarEventos();
+                });
+            </script>
+
+            <!-- ==================== SECCIÓN ACCIONES (reemplaza tu sección actual) ==================== -->
+            <section id="page-acciones" class="page-content hidden-page space-y-6">
+                <div class="mt-6 flex justify-center items-center">
+                    <h2 class="font-bold text-sm text-brand-blue mb-4 uppercase">ACCIONES DE TERRENO Y DIGITALES</h2>
+                    <button onclick="registrarAccion()"
+                        class="bg-white border-2 border-brand-red text-brand-red px-6 py-2 rounded-full text-sm font-bold shadow-sm hover:bg-brand-red hover:text-white transition-colors">
+                        <i class="fa-solid fa-camera mr-2"></i>Registrar mi acción
                     </button>
                 </div>
-                <div>
-                    <!-- Este campo ya no es necesario porque usamos el usuario autenticado -->
-                    <label class="block text-xs font-bold text-gray-600 mb-1 text-center">CÓDIGO VOLUNTARIO</label>
-                    <input type="text" id="codigoVoluntario" placeholder="Automático (sesión)" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm text-center font-mono">
+                <div class="border-l-2 border-brand-yellow ml-4 pl-5 space-y-6" id="feed-actividades">
+                    <div class="text-center text-gray-400 text-xs py-4">
+                        <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i><br>
+                        Cargando acciones...
+                    </div>
+                </div>
+            </section>
+            <div id="modalRegistro"
+                class="hidden fixed inset-0 z-[300] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm">
+                <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-fade-in">
+                    <div class="p-4 border-b bg-brand-red text-white flex justify-between items-center">
+                        <h3 class="font-bold uppercase text-sm tracking-widest">Registrar mi Acción</h3>
+                        <button onclick="cerrarModalRegistro()" class="hover:rotate-90 transition-transform">
+                            <i class="fa-solid fa-xmark text-xl"></i>
+                        </button>
+                    </div>
+
+                    <div class="p-6 space-y-4">
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <p class="text-[10px] uppercase text-gray-400 font-bold">Voluntario Activo</p>
+                            <p id="infoUsuario" class="text-sm text-brand-blue font-bold"></p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">¿QUÉ ACCIÓN REALIZASTE?</label>
+                            <select id="selectAccion"
+                                class="w-full p-3 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-red outline-none">
+                                <option value="1">Volanteo pedagógico (10 pts)</option>
+                                <option value="2">Reunión vecinal (50 pts)</option>
+                                <option value="3">Inscripción voluntario (30 pts)</option>
+                                <option value="4">Debate en redes (5 pts)</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="relative">
+                                <label class="block text-xs font-bold text-gray-600 mb-1 text-center">FOTO /
+                                    VIDEO</label>
+                                <input type="file" id="archivoEvidencia" class="hidden" accept="image/*,video/*">
+                                <button onclick="document.getElementById('archivoEvidencia').click()"
+                                    class="w-full bg-gray-100 border-2 border-dashed border-gray-300 p-4 rounded-xl text-gray-400 hover:text-brand-red hover:border-brand-red transition">
+                                    <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
+                                </button>
+                            </div>
+                            <div>
+                                <!-- Este campo ya no es necesario porque usamos el usuario autenticado -->
+                                <label class="block text-xs font-bold text-gray-600 mb-1 text-center">CÓDIGO
+                                    VOLUNTARIO</label>
+                                <input type="text" id="codigoVoluntario" placeholder="Automático (sesión)"
+                                    class="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm text-center font-mono">
+                            </div>
+                        </div>
+
+                        <button onclick="confirmarRegistro()"
+                            class="w-full bg-brand-red text-white py-4 rounded-xl font-black uppercase text-sm shadow-lg hover:shadow-brand-red/20 active:scale-95 transition">
+                            ¡SUMAR PUNTOS SERIOS!
+                        </button>
+                    </div>
                 </div>
             </div>
+            <script>
+                let currentUser = null;
 
-            <button onclick="confirmarRegistro()" class="w-full bg-brand-red text-white py-4 rounded-xl font-black uppercase text-sm shadow-lg hover:shadow-brand-red/20 active:scale-95 transition">
-                ¡SUMAR PUNTOS SERIOS!
-            </button>
-        </div>
-    </div>
-</div>
-<script>
-    let currentUser = null;
+                // 1. Mover esta función AFUERA para que sea global y eficiente
+                function obtenerRangoVoluntario(puntos) {
+                    const pts = puntos || 0;
+                    if (pts <= 50) {
+                        return {
+                            nivel: "Semilla",
+                            imagen: "https://img.freepik.com/vector-gratis/lindo-caballero-armadura-acero-espada-icono-vectorial-dibujos-animados-ilustracion-gente-vacaciones-aislado-plano_138676-14664.jpg?semt=ais_hybrid&w=740&q=80"
+                        };
+                    } else if (pts <= 150) {
+                        return {
+                            nivel: "Raiz",
+                            imagen: "https://img.freepik.com/vector-premium/diseno-personajes-dibujos-animados-profesionales-ilustracion-vectorial-hermosa_1253044-17168.jpg?semt=ais_hybrid&w=740&q=80"
+                        };
+                    } else {
+                        return {
+                            nivel: "Roble",
+                            imagen: "https://img.freepik.com/vector-premium/diseno-personajes-dibujos-animados-profesionales-ilustracion-vectorial-hermosa_1253044-11195.jpg?semt=ais_hybrid&w=740&q=80"
+                        };
+                    }
+                }
 
-    // 1. Mover esta función AFUERA para que sea global y eficiente
-    function obtenerRangoVoluntario(puntos) {
-        const pts = puntos || 0;
-        if (pts <= 50) {
-            return {
-                nivel: "Semilla",
-                imagen: "https://img.freepik.com/vector-gratis/lindo-caballero-armadura-acero-espada-icono-vectorial-dibujos-animados-ilustracion-gente-vacaciones-aislado-plano_138676-14664.jpg?semt=ais_hybrid&w=740&q=80"
-            };
-        } else if (pts <= 150) {
-            return {
-                nivel: "Raiz",
-                imagen: "https://img.freepik.com/vector-premium/diseno-personajes-dibujos-animados-profesionales-ilustracion-vectorial-hermosa_1253044-17168.jpg?semt=ais_hybrid&w=740&q=80"
-            };
-        } else {
-            return {
-                nivel: "Roble",
-                imagen: "https://img.freepik.com/vector-premium/diseno-personajes-dibujos-animados-profesionales-ilustracion-vectorial-hermosa_1253044-11195.jpg?semt=ais_hybrid&w=740&q=80"
-            };
-        }
-    }
+                async function loadSession() {
+                    const { data: { session } } = await supabaseApp.auth.getSession();
+                    currentUser = session?.user || null;
+                }
 
-    async function loadSession() {
-        const { data: { session } } = await supabaseApp.auth.getSession();
-        currentUser = session?.user || null;
-    }
+                async function cargarFeed() {
+                    const feed = document.getElementById('feed-actividades');
+                    if (!feed) return;
 
-    async function cargarFeed() {
-        const feed = document.getElementById('feed-actividades');
-        if (!feed) return;
-        
-        feed.innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Cargando acciones...</div>';
+                    feed.innerHTML = '<div class="text-center py-8 text-gray-400"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Cargando acciones...</div>';
 
-        const { data, error } = await supabaseApp
-            .from('acciones')
-            .select(`
+                    const { data, error } = await supabaseApp
+                        .from('acciones')
+                        .select(`
                 *,
                 voluntarios (
                     nombre,
@@ -806,38 +883,38 @@ document.getElementById('modalPreview').addEventListener('click', function(e) {
                     total_puntos
                 )
             `)
-            .order('fecha_creacion', { ascending: false })
-            .limit(10);
+                        .order('fecha_creacion', { ascending: false })
+                        .limit(10);
 
-        if (error) {
-            feed.innerHTML = '<div class="text-red-500 text-xs text-center py-4">Error al cargar el feed</div>';
-            return;
-        }
+                    if (error) {
+                        feed.innerHTML = '<div class="text-red-500 text-xs text-center py-4">Error al cargar el feed</div>';
+                        return;
+                    }
 
-        feed.innerHTML = '';
-        if (data.length === 0) {
-            feed.innerHTML = '<div class="text-center py-8 text-gray-400 italic">No hay acciones registradas aún</div>';
-            return;
-        }
+                    feed.innerHTML = '';
+                    if (data.length === 0) {
+                        feed.innerHTML = '<div class="text-center py-8 text-gray-400 italic">No hay acciones registradas aún</div>';
+                        return;
+                    }
 
-        data.forEach(item => {
-            const vol = item.voluntarios || { nombre: 'Voluntario', ciudad: 'Colombia', total_puntos: 0 };
-            
-            // Determinamos el avatar basado en el TOTAL de puntos del voluntario, no en los de la acción
-            const rango = obtenerRangoVoluntario(vol.total_puntos);
-            
-            let evidenciaHtml = '';
-            if (item.evidencia_url) {
-                if (/\.(jpg|jpeg|png|gif|webp)$/i.test(item.evidencia_url)) {
-                    evidenciaHtml = `<img src="${item.evidencia_url}" class="w-full h-full object-cover rounded-md" alt="Evidencia">`;
-                } else if (/\.(mp4|webm|mov)$/i.test(item.evidencia_url)) {
-                    evidenciaHtml = `<video controls class="w-full h-full object-cover rounded-md"><source src="${item.evidencia_url}"></video>`;
-                }
-            } else {
-                evidenciaHtml = '<p class="text-gray-400">Nuevo Voluntario ☺️</p>';
-            }
+                    data.forEach(item => {
+                        const vol = item.voluntarios || { nombre: 'Voluntario', ciudad: 'Colombia', total_puntos: 0 };
 
-            const html = `
+                        // Determinamos el avatar basado en el TOTAL de puntos del voluntario, no en los de la acción
+                        const rango = obtenerRangoVoluntario(vol.total_puntos);
+
+                        let evidenciaHtml = '';
+                        if (item.evidencia_url) {
+                            if (/\.(jpg|jpeg|png|gif|webp)$/i.test(item.evidencia_url)) {
+                                evidenciaHtml = `<img src="${item.evidencia_url}" class="w-full h-full object-cover rounded-md" alt="Evidencia">`;
+                            } else if (/\.(mp4|webm|mov)$/i.test(item.evidencia_url)) {
+                                evidenciaHtml = `<video controls class="w-full h-full object-cover rounded-md"><source src="${item.evidencia_url}"></video>`;
+                            }
+                        } else {
+                            evidenciaHtml = '<p class="text-gray-400">Nuevo Voluntario ☺️</p>';
+                        }
+
+                        const html = `
                 <div class="relative animate-fade-in mb-8">
                     <div class="absolute -left-12 top-0">
                         <img src="${rango.imagen}" class="w-10 h-10 rounded-full border-2 border-white shadow-md" title="Nivel: ${rango.nivel}">
@@ -858,369 +935,372 @@ document.getElementById('modalPreview').addEventListener('click', function(e) {
                     </div>
                 </div>
             `;
-            feed.insertAdjacentHTML('beforeend', html);
-        });
-    }
-
-    // ==================== ABRIR MODAL REGISTRO ====================
-    async function registrarAccion() {
-        const { data: { user } } = await supabaseApp.auth.getUser();
-        const { data: perfil, error } = await supabaseApp
-            .from('voluntarios')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-
-        if (perfil) {
-            const modal = document.getElementById('modalRegistro');
-            const infoDisplay = document.getElementById('infoUsuario');
-            infoDisplay.innerHTML = `<i class="fa-solid fa-user-check mr-2"></i> ${perfil.nombre} (${perfil.departamento})`;
-            modal.classList.remove('hidden');
-        }
-    }
-
-    function cerrarModalRegistro() {
-        document.getElementById('modalRegistro').classList.add('hidden');
-    }
-
-    // ==================== CONFIRMAR REGISTRO + GUARDAR EN STORAGE (CON SOPORTE OFFLINE) ====================
-    async function confirmarRegistro() {
-        if (!currentUser) return alert('Debes iniciar sesión');
-
-        const valor = document.getElementById('selectAccion').value;
-        const archivo = document.getElementById('archivoEvidencia').files[0];
-
-        let puntosSumados = 0;
-        let nombreAccion = "";
-        switch(valor) {
-            case "1": puntosSumados = 10; nombreAccion = "Volanteo pedagógico"; break;
-            case "2": puntosSumados = 50; nombreAccion = "Reunión vecinal"; break;
-            case "3": puntosSumados = 30; nombreAccion = "Inscripción voluntario"; break;
-            case "4": puntosSumados = 5;  nombreAccion = "Debate en redes"; break;
-        }
-
-        // Validar tamaño del archivo (máx 50MB)
-        if (archivo && typeof isFileSizeValid === 'function' && !isFileSizeValid(archivo)) {
-            return;
-        }
-
-        // ========== MODO OFFLINE: Guardar en IndexedDB ==========
-        if (!navigator.onLine) {
-            try {
-                let blob = null;
-                if (archivo) {
-                    blob = await fileToBlob(archivo);
+                        feed.insertAdjacentHTML('beforeend', html);
+                    });
                 }
 
-                await saveActionOffline({
-                    userId: currentUser.id,
-                    tipo: nombreAccion,
-                    puntos: puntosSumados,
-                    fileName: archivo ? archivo.name : null,
-                    fileType: archivo ? archivo.type : null,
-                    fileBlob: blob
-                });
+                // ==================== ABRIR MODAL REGISTRO ====================
+                async function registrarAccion() {
+                    const { data: { user } } = await supabaseApp.auth.getUser();
+                    const { data: perfil, error } = await supabaseApp
+                        .from('voluntarios')
+                        .select('*')
+                        .eq('id', user.id)
+                        .single();
 
-                alert(`📱 Sin internet — tu acción "${nombreAccion}" (+${puntosSumados} pts) fue guardada y se enviará automáticamente cuando vuelvas a tener conexión.`);
-                cerrarModalRegistro();
+                    if (perfil) {
+                        const modal = document.getElementById('modalRegistro');
+                        const infoDisplay = document.getElementById('infoUsuario');
+                        infoDisplay.innerHTML = `<i class="fa-solid fa-user-check mr-2"></i> ${perfil.nombre} (${perfil.departamento})`;
+                        modal.classList.remove('hidden');
+                    }
+                }
 
-                // Actualizar badge de pendientes
-                const pending = await getPendingActions();
-                updateSyncBadge(pending.length, false);
-            } catch (e) {
-                alert('Error al guardar offline: ' + e.message);
-            }
-            return;
-        }
+                function cerrarModalRegistro() {
+                    document.getElementById('modalRegistro').classList.add('hidden');
+                }
 
-        // ========== MODO ONLINE: Subir a Supabase normalmente ==========
-        let evidenceUrl = null;
-        if (archivo) {
-            try {
-                const fileName = `${currentUser.id}-${Date.now()}-${archivo.name}`;
-                const { error: uploadError } = await supabaseApp.storage
-                    .from('evidences')
-                    .upload(fileName, archivo);
+                // ==================== CONFIRMAR REGISTRO + GUARDAR EN STORAGE (CON SOPORTE OFFLINE) ====================
+                async function confirmarRegistro() {
+                    if (!currentUser) return alert('Debes iniciar sesión');
 
-                if (uploadError) throw uploadError;
+                    const valor = document.getElementById('selectAccion').value;
+                    const archivo = document.getElementById('archivoEvidencia').files[0];
 
-                const { data } = supabaseApp.storage.from('evidences').getPublicUrl(fileName);
-                evidenceUrl = data.publicUrl;
-            } catch (e) {
-                // Si falla la subida (puede haber perdido conexión durante el intento), guardar offline
-                try {
-                    const blob = await fileToBlob(archivo);
-                    await saveActionOffline({
-                        userId: currentUser.id,
+                    let puntosSumados = 0;
+                    let nombreAccion = "";
+                    switch (valor) {
+                        case "1": puntosSumados = 10; nombreAccion = "Volanteo pedagógico"; break;
+                        case "2": puntosSumados = 50; nombreAccion = "Reunión vecinal"; break;
+                        case "3": puntosSumados = 30; nombreAccion = "Inscripción voluntario"; break;
+                        case "4": puntosSumados = 5; nombreAccion = "Debate en redes"; break;
+                    }
+
+                    // Validar tamaño del archivo (máx 50MB)
+                    if (archivo && typeof isFileSizeValid === 'function' && !isFileSizeValid(archivo)) {
+                        return;
+                    }
+
+                    // ========== MODO OFFLINE: Guardar en IndexedDB ==========
+                    if (!navigator.onLine) {
+                        try {
+                            let blob = null;
+                            if (archivo) {
+                                blob = await fileToBlob(archivo);
+                            }
+
+                            await saveActionOffline({
+                                userId: currentUser.id,
+                                tipo: nombreAccion,
+                                puntos: puntosSumados,
+                                fileName: archivo ? archivo.name : null,
+                                fileType: archivo ? archivo.type : null,
+                                fileBlob: blob
+                            });
+
+                            alert(`📱 Sin internet — tu acción "${nombreAccion}" (+${puntosSumados} pts) fue guardada y se enviará automáticamente cuando vuelvas a tener conexión.`);
+                            cerrarModalRegistro();
+
+                            // Actualizar badge de pendientes
+                            const pending = await getPendingActions();
+                            updateSyncBadge(pending.length, false);
+                        } catch (e) {
+                            alert('Error al guardar offline: ' + e.message);
+                        }
+                        return;
+                    }
+
+                    // ========== MODO ONLINE: Subir a Supabase normalmente ==========
+                    let evidenceUrl = null;
+                    if (archivo) {
+                        try {
+                            const fileName = `${currentUser.id}-${Date.now()}-${archivo.name}`;
+                            const { error: uploadError } = await supabaseApp.storage
+                                .from('evidences')
+                                .upload(fileName, archivo);
+
+                            if (uploadError) throw uploadError;
+
+                            const { data } = supabaseApp.storage.from('evidences').getPublicUrl(fileName);
+                            evidenceUrl = data.publicUrl;
+                        } catch (e) {
+                            // Si falla la subida (puede haber perdido conexión durante el intento), guardar offline
+                            try {
+                                const blob = await fileToBlob(archivo);
+                                await saveActionOffline({
+                                    userId: currentUser.id,
+                                    tipo: nombreAccion,
+                                    puntos: puntosSumados,
+                                    fileName: archivo.name,
+                                    fileType: archivo.type,
+                                    fileBlob: blob
+                                });
+                                alert(`📱 Se perdió la conexión — tu acción fue guardada offline y se enviará cuando tengas internet.`);
+                                cerrarModalRegistro();
+                                const pending = await getPendingActions();
+                                updateSyncBadge(pending.length, false);
+                            } catch (offlineErr) {
+                                alert('Error al subir archivo: ' + e.message);
+                            }
+                            return;
+                        }
+                    }
+
+                    const { error } = await supabaseApp.from('acciones').insert({
+                        codigo_voluntario: currentUser.id,
                         tipo: nombreAccion,
                         puntos: puntosSumados,
-                        fileName: archivo.name,
-                        fileType: archivo.type,
-                        fileBlob: blob
+                        evidencia_url: evidenceUrl
                     });
-                    alert(`📱 Se perdió la conexión — tu acción fue guardada offline y se enviará cuando tengas internet.`);
+
+                    if (error) {
+                        alert('Error al guardar la acción: ' + error.message);
+                        return;
+                    }
+
+                    alert(`¡Excelente! Has sumado ${puntosSumados} puntos`);
                     cerrarModalRegistro();
-                    const pending = await getPendingActions();
-                    updateSyncBadge(pending.length, false);
-                } catch (offlineErr) {
-                    alert('Error al subir archivo: ' + e.message);
+                    cargarFeed();
                 }
-                return;
-            }
-        }
 
-        const { error } = await supabaseApp.from('acciones').insert({
-            codigo_voluntario: currentUser.id,
-            tipo: nombreAccion,
-            puntos: puntosSumados,
-            evidencia_url: evidenceUrl
-        });
 
-        if (error) {
-            alert('Error al guardar la acción: ' + error.message);
-            return;
-        }
+                document.addEventListener('DOMContentLoaded', async () => {
+                    await loadSession();
+                    if (document.getElementById('feed-actividades')) {
+                        cargarFeed();
+                    }
+                });
+            </script>
 
-        alert(`¡Excelente! Has sumado ${puntosSumados} puntos`);
-        cerrarModalRegistro();
-        cargarFeed();
-    }
+            <section id="page-perfil" class="page-content hidden-page space-y-6">
+                <h2 class="font-bold text-sm text-brand-blue uppercase">PERFIL DEL VOLUNTARIO</h2>
+                <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-xl flex flex-col items-center">
+                    <div class="relative">
+                        <img id="imagenPerfil"
+                            src="https://img.freepik.com/vector-gratis/lindo-caballero-armadura-acero-espada-icono-vectorial-dibujos-animados-ilustracion-gente-vacaciones-aislado-plano_138676-14664.jpg?semt=ais_hybrid&w=740&q=80"
+                            class="w-24 h-24 rounded-full border-4 border-brand-yellow" alt="Perfil">
+                        <span id="nivel_2"
+                            class="absolute bottom-0 right-0 bg-brand-red text-white px-2.5 py-1 text-[10px] font-bold rounded-full shadow-sm"></span>
+                    </div>
 
-    // ==================== NAVEGACIÓN (llama al feed al abrir la página) ====================
-    function showPage(pageId) {
-        // ... tu código de showPage original ...
-        document.querySelectorAll('.page-content').forEach(page => page.classList.add('hidden-page'));
-        const target = document.getElementById('page-' + pageId);
-        if (target) target.classList.remove('hidden-page');
+                    <h3 id="user-nombre" class="font-bold text-lg text-gray-900 mt-4">Juan Perez</h3>
+                    <p class="text-xs text-brand-red font-semibold">Guardianes <span id="user-depto1"></span></p>
+                    <div class="grid grid-cols-2 gap-x-8 gap-y-4 mt-6 text-sm w-full border-t border-gray-100 pt-6">
+                        <div>
+                            <p class="text-xs text-gray-400 font-medium">Departamento</p>
+                            <p id="user-depto" class="font-medium text-gray-800">Santander</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 font-medium">Ciudad</p>
+                            <p id="user-ciudad" class="font-medium text-gray-800">Bucaramanga</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 font-medium">Teléfono</p>
+                            <p id="user-whatsapp" class="font-medium text-gray-800">+57 300 123 4567</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400 font-medium">Puntos</p>
+                            <p id="user-puntos-total" class="font-medium text-gray-800">100</p>
+                        </div>
 
-        // Actualizar nav (tu código)
-        document.querySelectorAll('.nav-item').forEach(item => {
-            if (item.getAttribute('data-page') === pageId) {
-                item.classList.add('text-brand-red', 'active-nav');
-            } else {
-                item.classList.remove('text-brand-red', 'active-nav');
-            }
-        });
+                        <div>
+                            <p class="text-xs text-gray-400 font-medium">Codigo Voluntario</p>
+                            <p id="codigo_vol" class="font-medium text-gray-800">100</p>
+                        </div>
+                        <script>
+                            const contenedorCodigo = document.getElementById('codigo_vol').parentElement;
+                            const codigoElemento = document.getElementById('codigo_vol');
 
-        document.getElementById('main-content').scrollTop = 0;
+                            // Cambiamos el cursor para indicar que es interactivo
+                            contenedorCodigo.style.cursor = 'pointer';
+                            contenedorCodigo.title = 'Haz clic para copiar el código';
 
-        // 🔥 CARGAR FEED AUTOMÁTICAMENTE
-        if (pageId === 'acciones') cargarFeed();
-    }
-    window.onload = async () => {
-        await loadSession();
-        if (document.getElementById('feed-actividades')) {
-            cargarFeed();
-        }
-    };
-</script>
+                            contenedorCodigo.addEventListener('click', async () => {
+                                const textoACopiar = codigoElemento.innerText;
 
-        <section id="page-perfil" class="page-content hidden-page space-y-6">
-            <h2 class="font-bold text-sm text-brand-blue uppercase">PERFIL DEL VOLUNTARIO</h2>
-            <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-xl flex flex-col items-center">
-                <div class="relative">
-                    <img id="imagenPerfil" src="https://img.freepik.com/vector-gratis/lindo-caballero-armadura-acero-espada-icono-vectorial-dibujos-animados-ilustracion-gente-vacaciones-aislado-plano_138676-14664.jpg?semt=ais_hybrid&w=740&q=80" class="w-24 h-24 rounded-full border-4 border-brand-yellow" alt="Perfil">
-                    <span id="nivel_2" class="absolute bottom-0 right-0 bg-brand-red text-white px-2.5 py-1 text-[10px] font-bold rounded-full shadow-sm"></span>
+                                try {
+                                    // Copiar al portapapeles
+                                    await navigator.clipboard.writeText(textoACopiar);
+
+                                    // Feedback visual: Pequeño destello o cambio de color temporal
+                                    const colorOriginal = codigoElemento.className;
+                                    codigoElemento.className = "font-black text-green-600 transition-all scale-110";
+
+                                    // Volver al estado original tras 1 segundo
+                                    setTimeout(() => {
+                                        codigoElemento.className = colorOriginal;
+                                    }, 1000);
+
+                                    console.log('Código copiado: ' + textoACopiar);
+                                } catch (err) {
+                                    console.error('Error al copiar: ', err);
+                                }
+                            });
+                        </script>
+                    </div>
+                    <a href="https://wa.me/573000000000?text=Hola%2C%20necesito%20ayuda%20con%20la%20plataforma%20de%20Guardianes"
+                        target="_blank"
+                        class="w-full mt-2 max-w-xs bg-[#25D366] hover:bg-[#128C7E] text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all flex items-center justify-center gap-3 active:scale-85">
+                        <i class="fa-brands fa-whatsapp text-xl"></i>
+                        Contactar Soporte
+                    </a>
                 </div>
+            </section>
 
-                <h3 id="user-nombre" class="font-bold text-lg text-gray-900 mt-4">Juan Perez</h3>
-                <p class="text-xs text-brand-red font-semibold">Guardianes <span id="user-depto1"></span></p>
-                <div class="grid grid-cols-2 gap-x-8 gap-y-4 mt-6 text-sm w-full border-t border-gray-100 pt-6">
-                    <div>
-                        <p class="text-xs text-gray-400 font-medium">Departamento</p>
-                        <p id="user-depto" class="font-medium text-gray-800">Santander</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-gray-400 font-medium">Ciudad</p>
-                        <p id="user-ciudad" class="font-medium text-gray-800">Bucaramanga</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-gray-400 font-medium">Teléfono</p>
-                        <p id="user-whatsapp" class="font-medium text-gray-800">+57 300 123 4567</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-gray-400 font-medium">Puntos</p>
-                        <p id="user-puntos-total" class="font-medium text-gray-800">100</p>
-                    </div>
-
-                     <div>
-                        <p class="text-xs text-gray-400 font-medium">Codigo Voluntario</p>
-                        <p id="codigo_vol" class="font-medium text-gray-800">100</p>
-                    </div>
-                    <script>
-                        const contenedorCodigo = document.getElementById('codigo_vol').parentElement;
-    const codigoElemento = document.getElementById('codigo_vol');
-
-    // Cambiamos el cursor para indicar que es interactivo
-    contenedorCodigo.style.cursor = 'pointer';
-    contenedorCodigo.title = 'Haz clic para copiar el código';
-
-    contenedorCodigo.addEventListener('click', async () => {
-        const textoACopiar = codigoElemento.innerText;
-
-        try {
-            // Copiar al portapapeles
-            await navigator.clipboard.writeText(textoACopiar);
-
-            // Feedback visual: Pequeño destello o cambio de color temporal
-            const colorOriginal = codigoElemento.className;
-            codigoElemento.className = "font-black text-green-600 transition-all scale-110";
-            
-            // Volver al estado original tras 1 segundo
-            setTimeout(() => {
-                codigoElemento.className = colorOriginal;
-            }, 1000);
-
-            console.log('Código copiado: ' + textoACopiar);
-        } catch (err) {
-            console.error('Error al copiar: ', err);
-        }
-    });
-                    </script>
-                </div>
-                <a href="https://wa.me/573000000000?text=Hola%2C%20necesito%20ayuda%20con%20la%20plataforma%20de%20Guardianes" 
-                target="_blank" 
-                class="w-full mt-2 max-w-xs bg-[#25D366] hover:bg-[#128C7E] text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all flex items-center justify-center gap-3 active:scale-85">
-                    <i class="fa-brands fa-whatsapp text-xl"></i>
-                    Contactar Soporte
-                </a>
-            </div>
-        </section>
-
-        <section id="page-grupos" class="page-content hidden-page space-y-6">
-            <h2 class="font-bold text-sm text-brand-blue mb-4">BUSCAR DEPARTAMENTO O CIUDAD (Da click encima)</h2>
-           <!-- <div class="relative">
+            <section id="page-grupos" class="page-content hidden-page space-y-6">
+                <h2 class="font-bold text-sm text-brand-blue mb-4">BUSCAR DEPARTAMENTO O CIUDAD (Da click encima)</h2>
+                <!-- <div class="relative">
                 <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
                 <input type="text" id="search-groups" placeholder="Ej: Antioquia o Bucaramanga..." class="w-full bg-gray-50 border border-gray-100 rounded-full pl-11 pr-6 py-2.5 text-sm focus:ring-1 focus:ring-brand-blue focus:border-brand-blue outline-none shadow-inner">
             </div>-->
-            <div id="groups-list" class="space-y-4">
-                <div class="group-dept" data-dept="antioquia">
-                    <button class="w-full text-left font-bold text-sm text-gray-700 bg-gray-100 p-3 rounded-lg flex justify-between items-center group-dept-toggle">
-                        <span><i class="fa-solid fa-map-location mr-2 text-brand-red"></i>Norte de Santander</span>
-                        <i class="fa-solid fa-chevron-down text-gray-400 group-dept-icon"></i>
-                    </button>
-                    <div class="hidden mt-2 p-2 space-y-2 group-links">
-                        <a href="https://chat.whatsapp.com/ETiluZP9xp19vPd7hGuzKE?mode=gi_t" target="_blank" class="group-btn w-full bg-brand-light p-3 rounded-xl border border-brand-yellow/30 flex items-center justify-between shadow-sm hover:shadow-md transition">
-                            <span class="text-xs font-bold text-brand-blue">Grupo Norte de Santander</span>
-                            <i class="fa-brands fa-whatsapp text-2xl text-brand-blue"></i>
-                        </a>
+                <div id="groups-list" class="space-y-4">
+                    <div class="group-dept" data-dept="antioquia">
+                        <button
+                            class="w-full text-left font-bold text-sm text-gray-700 bg-gray-100 p-3 rounded-lg flex justify-between items-center group-dept-toggle">
+                            <span><i class="fa-solid fa-map-location mr-2 text-brand-red"></i>Norte de Santander</span>
+                            <i class="fa-solid fa-chevron-down text-gray-400 group-dept-icon"></i>
+                        </button>
+                        <div class="hidden mt-2 p-2 space-y-2 group-links">
+                            <a href="https://chat.whatsapp.com/ETiluZP9xp19vPd7hGuzKE?mode=gi_t" target="_blank"
+                                class="group-btn w-full bg-brand-light p-3 rounded-xl border border-brand-yellow/30 flex items-center justify-between shadow-sm hover:shadow-md transition">
+                                <span class="text-xs font-bold text-brand-blue">Grupo Norte de Santander</span>
+                                <i class="fa-brands fa-whatsapp text-2xl text-brand-blue"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="group-dept" data-dept="santander">
+                        <button
+                            class="w-full text-left font-bold text-sm text-gray-700 bg-gray-100 p-3 rounded-lg flex justify-between items-center dept-title-active group-dept-toggle">
+                            <span><i class="fa-solid fa-map-location mr-2 text-brand-red"></i>Santander</span>
+                            <i class="fa-solid fa-chevron-down text-gray-400 group-dept-icon rotate-180"></i>
+                        </button>
+                        <div class="mt-2 p-2 space-y-2 group-links">
+                            <a href="https://chat.whatsapp.com/HnjIs3OGJw942SVtRmeZpf" target="_blank"
+                                class="group-btn group-btn-active w-full p-3 rounded-xl border border-brand-red flex items-center justify-between shadow-sm hover:shadow-md transition"
+                                data-city="bucaramanga">
+                                <span class="text-xs font-bold">Grupo Santander</span>
+                                <i class="fa-brands fa-whatsapp text-2xl"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
+            </section>
+        </main>
 
-                <div class="group-dept" data-dept="santander">
-                    <button class="w-full text-left font-bold text-sm text-gray-700 bg-gray-100 p-3 rounded-lg flex justify-between items-center dept-title-active group-dept-toggle">
-                        <span><i class="fa-solid fa-map-location mr-2 text-brand-red"></i>Santander</span>
-                        <i class="fa-solid fa-chevron-down text-gray-400 group-dept-icon rotate-180"></i>
-                    </button>
-                    <div class="mt-2 p-2 space-y-2 group-links">
-                        <a href="https://chat.whatsapp.com/HnjIs3OGJw942SVtRmeZpf" target="_blank" class="group-btn group-btn-active w-full p-3 rounded-xl border border-brand-red flex items-center justify-between shadow-sm hover:shadow-md transition" data-city="bucaramanga">
-                            <span class="text-xs font-bold">Grupo Santander</span>
-                            <i class="fa-brands fa-whatsapp text-2xl"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
+        <nav
+            class="fixed bottom-0 left-0 right-0 mx-auto max-w-md bg-white border-t border-gray-200 flex justify-around items-center px-1 py-3 z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.1)]">
 
-    <nav class="fixed bottom-0 left-0 right-0 mx-auto max-w-md bg-white border-t border-gray-200 flex justify-around items-center px-1 py-3 z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.1)]">
-        
-        <button onclick="showPage('inicio')" class="flex flex-col items-center w-16 nav-item text-brand-red active-nav" data-page="inicio">
-            <i class="fa-solid fa-house mb-1 text-lg"></i>
-            <span class="text-[10px] font-bold">Inicio</span>
-        </button>
-        
-        <button onclick="showPage('acciones')" class="flex flex-col items-center hover:text-brand-red transition w-16 nav-item text-gray-400" data-page="acciones">
-            <i class="fa-solid fa-list-check mb-1 text-lg"></i>
-            <span class="text-[10px] font-semibold">Acciones</span>
-        </button>
-        
-        <button onclick="showPage('calendario')" class="flex flex-col items-center hover:text-brand-red transition w-16 nav-item text-gray-400" data-page="calendario">
-            <i class="fa-solid fa-calendar mb-1 text-lg"></i>
-            <span class="text-[10px] font-semibold">Calendario</span>
-        </button>
+            <button onclick="showPage('inicio')"
+                class="flex flex-col items-center w-16 nav-item text-brand-red active-nav" data-page="inicio">
+                <i class="fa-solid fa-house mb-1 text-lg"></i>
+                <span class="text-[10px] font-bold">Inicio</span>
+            </button>
 
-        <button onclick="showPage('grupos')" class="flex flex-col items-center hover:text-brand-red transition w-16 nav-item relative text-gray-400" data-page="grupos">
-            <i class="fa-solid fa-users mb-1 text-lg"></i>
-            <span class="text-[10px] font-semibold">Grupos</span>
-        </button>
+            <button onclick="showPage('acciones')"
+                class="flex flex-col items-center hover:text-brand-red transition w-16 nav-item text-gray-400"
+                data-page="acciones">
+                <i class="fa-solid fa-list-check mb-1 text-lg"></i>
+                <span class="text-[10px] font-semibold">Acciones</span>
+            </button>
 
-        <button onclick="showPage('perfil')" class="flex flex-col items-center hover:text-brand-red transition w-16 nav-item text-gray-400" data-page="perfil">
-            <i class="fa-regular fa-user mb-1 text-lg"></i>
-            <span class="text-[10px] font-semibold">Perfil</span>
-        </button>
+            <button onclick="showPage('calendario')"
+                class="flex flex-col items-center hover:text-brand-red transition w-16 nav-item text-gray-400"
+                data-page="calendario">
+                <i class="fa-solid fa-calendar mb-1 text-lg"></i>
+                <span class="text-[10px] font-semibold">Calendario</span>
+            </button>
 
-    </nav>
+            <button onclick="showPage('grupos')"
+                class="flex flex-col items-center hover:text-brand-red transition w-16 nav-item relative text-gray-400"
+                data-page="grupos">
+                <i class="fa-solid fa-users mb-1 text-lg"></i>
+                <span class="text-[10px] font-semibold">Grupos</span>
+            </button>
 
-</div>
+            <button onclick="showPage('perfil')"
+                class="flex flex-col items-center hover:text-brand-red transition w-16 nav-item text-gray-400"
+                data-page="perfil">
+                <i class="fa-regular fa-user mb-1 text-lg"></i>
+                <span class="text-[10px] font-semibold">Perfil</span>
+            </button>
 
-<script>
-    // Lógica para el sistema de navegación
-    function showPage(pageId) {
-        // 1. Ocultar todas las secciones
-        const pages = document.querySelectorAll('.page-content');
-        pages.forEach(page => {
-            page.classList.add('hidden-page');
-        });
+        </nav>
 
-        // 2. Mostrar la sección seleccionada
-        const targetPage = document.getElementById('page-' + pageId);
-        if (targetPage) {
-            targetPage.classList.remove('hidden-page');
+    </div>
+
+    <script>
+        // Lógica para el sistema de navegación
+        function showPage(pageId) {
+            // 1. Ocultar todas las secciones
+            const pages = document.querySelectorAll('.page-content');
+            pages.forEach(page => {
+                page.classList.add('hidden-page');
+            });
+
+            // 2. Mostrar la sección seleccionada
+            const targetPage = document.getElementById('page-' + pageId);
+            if (targetPage) {
+                targetPage.classList.remove('hidden-page');
+            }
+
+            // 3. Actualizar el estado visual de la barra de navegación
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                if (item.getAttribute('data-page') === pageId) {
+                    item.classList.add('text-brand-red', 'active-nav');
+                    item.classList.remove('text-gray-400');
+                    item.querySelector('span').classList.add('font-bold');
+                    item.querySelector('span').classList.remove('font-semibold');
+                } else {
+                    item.classList.add('text-gray-400');
+                    item.classList.remove('text-brand-red', 'active-nav');
+                    item.querySelector('span').classList.remove('font-bold');
+                    item.querySelector('span').classList.add('font-semibold');
+                }
+            });
+
+            // 4. Scrollear al tope en cada cambio de pantalla
+            document.getElementById('main-content').scrollTop = 0;
         }
 
-        // 3. Actualizar el estado visual de la barra de navegación
-        const navItems = document.querySelectorAll('.nav-item');
-        navItems.forEach(item => {
-            if (item.getAttribute('data-page') === pageId) {
-                item.classList.add('text-brand-red', 'active-nav');
-                item.classList.remove('text-gray-400');
-                item.querySelector('span').classList.add('font-bold');
-                item.querySelector('span').classList.remove('font-semibold');
-            } else {
-                item.classList.add('text-gray-400');
-                item.classList.remove('text-brand-red', 'active-nav');
-                item.querySelector('span').classList.remove('font-bold');
-                item.querySelector('span').classList.add('font-semibold');
-            }
+        // Lógica para expandir/colapsar departamentos en Grupos
+        document.querySelectorAll('.group-dept-toggle').forEach(button => {
+            button.addEventListener('click', () => {
+                const deptContainer = button.closest('.group-dept');
+                const linksContainer = deptContainer.querySelector('.group-links');
+                const icon = deptContainer.querySelector('.group-dept-icon');
+
+                linksContainer.classList.toggle('hidden');
+                icon.classList.toggle('rotate-180');
+                button.classList.toggle('dept-title-active');
+            });
         });
+    </script>
 
-        // 4. Scrollear al tope en cada cambio de pantalla
-        document.getElementById('main-content').scrollTop = 0;
-    }
-
-    // Lógica para expandir/colapsar departamentos en Grupos
-    document.querySelectorAll('.group-dept-toggle').forEach(button => {
-        button.addEventListener('click', () => {
-            const deptContainer = button.closest('.group-dept');
-            const linksContainer = deptContainer.querySelector('.group-links');
-            const icon = deptContainer.querySelector('.group-dept-icon');
-
-            linksContainer.classList.toggle('hidden');
-            icon.classList.toggle('rotate-180');
-            button.classList.toggle('dept-title-active');
-        });
-    });
-</script>
-
-<script src="offline-sync.js"></script>
-<script>
-    // Registrar Service Worker para PWA
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
-                .then(reg => {
-                    console.log('[PWA] Service Worker registrado:', reg.scope);
-                    // Intentar registrar Background Sync
-                    if ('sync' in reg) {
-                        reg.sync.register('sync-acciones')
-                            .then(() => console.log('[PWA] Background Sync registrado'))
-                            .catch(err => console.log('[PWA] Background Sync no soportado:', err));
-                    }
-                })
-                .catch(err => console.error('[PWA] Error registrando SW:', err));
-        });
-    }
-</script>
+    <script src="offline-sync.js"></script>
+    <script>
+        // Inicializar offline-sync solo después de que supabaseApp esté disponible
+        if (typeof initOfflineSync === 'function') initOfflineSync();
+    </script>
+    <script>
+        // Registrar Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => {
+                        console.log('[PWA] Service Worker registrado:', reg.scope);
+                        // Intentar registrar Background Sync
+                        if ('sync' in reg) {
+                            reg.sync.register('sync-acciones')
+                                .then(() => console.log('[PWA] Background Sync registrado'))
+                                .catch(err => console.log('[PWA] Background Sync no soportado:', err));
+                        }
+                    })
+                    .catch(err => console.error('[PWA] Error registrando SW:', err));
+            });
+        }
+    </script>
 </body>
+
 </html>
