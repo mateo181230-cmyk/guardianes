@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -28,7 +30,6 @@
         .form-section { transition: all 0.3s ease-in-out; }
         .hidden-form { display: none; opacity: 0; }
         
-        /* Estilos personalizados para checkboxes y radios */
         .custom-checkbox:checked + div { background-color: #0A3572; border-color: #0A3572; color: white; }
         .custom-radio:checked + div { background-color: #B82318; border-color: #B82318; color: white; }
     </style>
@@ -39,10 +40,10 @@
 
     <header class="bg-brand-yellow p-6 flex flex-col items-center justify-center relative shrink-0">
         <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-md mb-3">
-            <i class="fa-solid fa-leaf text-brand-blue text-3xl"></i>
+            <img src="logo.webp" alt="Logo" class="h-10 w-auto" onerror="this.style.display='none'">
         </div>
-        <h1 class="font-black text-brand-blue leading-tight text-2xl tracking-tight uppercase text-center">Fajardo<br>Santander</h1>
-        <p class="text-sm text-brand-red font-bold uppercase tracking-wider mt-1">Guardianes</p>
+        <h1 class="font-black text-brand-blue leading-tight text-2xl tracking-tight uppercase text-center">GUARDIANES</h1>
+        <p class="text-sm text-brand-red font-bold uppercase tracking-wider mt-1">Fajardo Presidente</p>
     </header>
 
     <div class="flex border-b border-gray-200 shrink-0">
@@ -56,13 +57,12 @@
 
     <div class="flex-1 overflow-y-auto p-6 bg-brand-light/30">
 
-        <form id="form-login" class="form-section space-y-5" onsubmit="event.preventDefault(); alert('Iniciando sesión...');">
-            
+        <form id="form-login" class="form-section space-y-5" onsubmit="iniciarSesion(event)">
             <div>
                 <label class="block text-xs font-bold text-brand-blue uppercase mb-1">WhatsApp <span class="text-brand-red">*</span></label>
                 <div class="relative">
                     <i class="fa-brands fa-whatsapp absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                    <input type="tel" required placeholder="Ej: 300 123 4567" class="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-brand-blue focus:border-brand-blue outline-none transition-shadow">
+                    <input type="tel" id="log-whatsapp" required placeholder="Ej: 3001234567" class="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-brand-blue outline-none transition-shadow">
                 </div>
             </div>
 
@@ -70,48 +70,64 @@
                 <label class="block text-xs font-bold text-brand-blue uppercase mb-1">Contraseña <span class="text-brand-red">*</span></label>
                 <div class="relative">
                     <i class="fa-solid fa-lock absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-                    <input type="password" required placeholder="Tu año de nacimiento" class="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-brand-blue focus:border-brand-blue outline-none transition-shadow">
+                    <input type="password" id="log-password" required placeholder="Tu año de nacimiento" class="w-full bg-white border border-gray-200 rounded-lg pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-brand-blue outline-none transition-shadow">
                 </div>
             </div>
 
-            <button type="submit" class="w-full bg-brand-blue text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-blue-900 transition-colors mt-4">
+            <button type="submit" id="btn-login" class="w-full bg-brand-blue text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-blue-900 transition-colors mt-4">
                 Entrar a la Campaña <i class="fa-solid fa-arrow-right ml-2"></i>
             </button>
             
             <div class="text-center mt-4">
-                <a href="#" class="text-xs text-gray-500 hover:text-brand-blue font-medium underline">¿Olvidaste tu contraseña?</a>
+                <a href="https://wa.me/573000000000" class="text-xs text-gray-500 hover:text-brand-blue font-medium underline">¿Olvidaste tu contraseña?</a>
             </div>
         </form>
 
-        <form id="form-register" class="form-section hidden-form space-y-5" onsubmit="event.preventDefault(); alert('Registro completado exitosamente.');">
+        <form id="form-register" class="form-section hidden-form space-y-5" onsubmit="registrarVoluntario(event)">
             
             <div class="space-y-4">
                 <h3 class="text-sm font-bold text-brand-red border-b border-gray-200 pb-1"><i class="fa-regular fa-id-card mr-2"></i>Datos Personales</h3>
                 
                 <div>
-                    <label class="block text-xs font-bold text-brand-blue uppercase mb-1">Nombre Completo <span class="text-brand-red">*</span></label>
-                    <input type="text" required placeholder="Juan Pérez" class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-blue outline-none">
+                    <label class="block text-xs font-bold text-brand-blue uppercase mb-1">Primer Nombre <span class="text-brand-red">*</span></label>
+                    <input type="text" id="reg-nombre" required placeholder="Juan" class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-blue outline-none">
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-brand-blue uppercase mb-1">WhatsApp <span class="text-brand-red">*</span></label>
-                        <input type="tel" required placeholder="300 000 0000" class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-blue outline-none">
+                        <input type="tel" id="reg-whatsapp" required placeholder="3001234567" class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-blue outline-none">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-brand-blue uppercase mb-1">Edad <span class="text-brand-red">*</span></label>
-                        <input type="number" required min="14" max="99" placeholder="Años" class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-blue outline-none">
+                        <input type="number" id="reg-edad" required min="10" max="99" placeholder="Años" class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-blue outline-none">
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-brand-blue uppercase mb-1">Ciudad y Sector <span class="text-brand-red">*</span></label>
-                    <input type="text" required placeholder="Ej: Bucaramanga, Cabecera" class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-blue outline-none">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-brand-blue uppercase mb-1">Departamento <span class="text-brand-red">*</span></label>
+                        <select id="select-departamento" required onchange="cargarCiudades()" class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-blue outline-none text-gray-700">
+                            <option value="" disabled selected>Selecciona un departamento...</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-brand-blue uppercase mb-1">Ciudad <span class="text-brand-red">*</span></label>
+                            <input type="text" id="input-ciudad" list="lista-ciudades" required placeholder="Escribe tu ciudad..." class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-blue outline-none">
+                            <datalist id="lista-ciudades"></datalist>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-brand-blue uppercase mb-1">Sector/Barrio <span class="text-brand-red">*</span></label>
+                            <input type="text" id="reg-sector" required placeholder="Ej: Cabecera" class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-blue outline-none">
+                        </div>
+                    </div>
                 </div>
 
                 <div>
                     <label class="block text-xs font-bold text-brand-blue uppercase mb-1">¿A qué te dedicas? <span class="text-brand-red">*</span></label>
-                    <input type="text" required placeholder="Estudiante, Ingeniero, Comerciante..." class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-blue outline-none">
+                    <input type="text" id="reg-profesion" required placeholder="Estudiante, Ingeniero, Comerciante..." class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-blue outline-none">
                 </div>
             </div>
 
@@ -120,7 +136,7 @@
 
                 <div>
                     <label class="block text-xs font-bold text-brand-blue uppercase mb-2">Bandera que más te motiva <span class="text-brand-red">*</span></label>
-                    <select required class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-blue outline-none text-gray-700">
+                    <select id="reg-bandera" required class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-blue outline-none text-gray-700">
                         <option value="" disabled selected>Selecciona una opción...</option>
                         <option value="educacion">Educación y Ciencia</option>
                         <option value="corrupcion">Lucha contra la corrupción y Transparencia</option>
@@ -131,7 +147,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-brand-blue uppercase mb-2">Áreas donde te gustaría aportar <span class="text-brand-red">*</span></label>
+                    <label class="block text-xs font-bold text-brand-blue mb-2">Áreas donde te gustaría aportar (varias puede elegir) <span class="text-brand-red">*</span></label>
                     <div class="space-y-2">
                         <label class="flex items-center cursor-pointer group">
                             <input type="checkbox" class="hidden custom-checkbox" value="redes">
@@ -173,7 +189,7 @@
 
                 <div>
                     <label class="block text-xs font-bold text-brand-blue uppercase mb-1">Tiempo disponible semanal <span class="text-brand-red">*</span></label>
-                    <select required class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-blue outline-none text-gray-700">
+                    <select id="reg-tiempo" required class="w-full bg-white border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-blue outline-none text-gray-700">
                         <option value="" disabled selected>Selecciona una opción...</option>
                         <option value="1-3">1 a 3 horas</option>
                         <option value="4-7">4 a 7 horas</option>
@@ -218,7 +234,7 @@
                 
                 <div>
                     <label class="block text-xs font-bold text-brand-blue uppercase mb-1">Contraseña <span class="text-brand-red">*</span></label>
-                    <input type="password" required placeholder="Ej: 1995" class="w-full bg-white border border-brand-yellow rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-blue outline-none">
+                    <input type="password" id="reg-password" required placeholder="Ej: 1995" class="w-full bg-white border border-brand-yellow rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-brand-blue outline-none">
                     <p class="text-[11px] font-medium text-gray-500 mt-1.5 flex items-center">
                         <i class="fa-solid fa-circle-info text-brand-yellow mr-1"></i> 
                         Para mayor facilidad, te recomendamos colocar <strong class="ml-1 text-brand-blue">tu año de nacimiento</strong>.
@@ -226,11 +242,11 @@
                 </div>
             </div>
 
-            <button type="submit" class="w-full bg-brand-red text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-red-800 transition-colors mt-6">
+            <button type="submit" id="btn-register" class="w-full bg-brand-red text-white font-bold py-3.5 rounded-xl shadow-md hover:bg-red-800 transition-colors mt-6">
                 Crear mi cuenta de Voluntario <i class="fa-solid fa-check ml-1"></i>
             </button>
             <p class="text-center text-[10px] text-gray-400 mt-2 pb-4">
-                Al registrarte aceptas los términos de tratamiento de datos de la campaña.
+                Al registrarte aceptas los términos de tratamiento de datos.
             </p>
 
         </form>
@@ -239,6 +255,13 @@
 </div>
 
 <script>
+    // --- 1. CONFIGURACIÓN DE SUPABASE ---
+    // REEMPLAZA ESTAS DOS LÍNEAS CON TUS DATOS DE SUPABASE
+    const supabaseUrl = 'https://eixfmvsbjjxfytjynnkf.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpeGZtdnNiamp4Znl0anlubmtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxNDEzMjksImV4cCI6MjA4OTcxNzMyOX0.ir4g_PI4KKyy14vDfGA4GHDdIIw3Ty2FqS0uC_Z-qQY';
+    const supabaseApp = supabase.createClient(supabaseUrl, supabaseKey);
+
+    // --- 2. LÓGICA DE PESTAÑAS Y CIUDADES ---
     function switchTab(tab) {
         const loginForm = document.getElementById('form-login');
         const registerForm = document.getElementById('form-register');
@@ -246,28 +269,143 @@
         const registerTabBtn = document.getElementById('tab-register');
 
         if (tab === 'login') {
-            // Mostrar Login
             loginForm.classList.remove('hidden-form');
             registerForm.classList.add('hidden-form');
-            
-            // Estilos de botones
             loginTabBtn.classList.add('text-brand-blue', 'border-brand-blue', 'font-bold');
             loginTabBtn.classList.remove('text-gray-400', 'border-transparent', 'font-semibold');
-            
             registerTabBtn.classList.add('text-gray-400', 'border-transparent', 'font-semibold');
             registerTabBtn.classList.remove('text-brand-blue', 'border-brand-blue', 'font-bold');
         } else {
-            // Mostrar Registro
             registerForm.classList.remove('hidden-form');
             loginForm.classList.add('hidden-form');
-            
-            // Estilos de botones
             registerTabBtn.classList.add('text-brand-blue', 'border-brand-blue', 'font-bold');
             registerTabBtn.classList.remove('text-gray-400', 'border-transparent', 'font-semibold');
-            
             loginTabBtn.classList.add('text-gray-400', 'border-transparent', 'font-semibold');
             loginTabBtn.classList.remove('text-brand-blue', 'border-brand-blue', 'font-bold');
         }
+    }
+
+    const colombiaData = {
+        "Amazonas": ["Leticia", "Puerto Nariño"],
+        "Antioquia": ["Medellín", "Bello", "Itagüí", "Envigado", "Apartadó"],
+        "Santander": ["Bucaramanga", "Floridablanca", "Girón", "Piedecuesta", "Barrancabermeja", "San Gil"],
+        // Añade el resto de departamentos aquí...
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const deptoSelect = document.getElementById('select-departamento');
+        Object.keys(colombiaData).sort().forEach(depto => {
+            const option = document.createElement('option');
+            option.value = depto;
+            option.textContent = depto;
+            deptoSelect.appendChild(option);
+        });
+    });
+    function cargarCiudades() {
+        const deptoSeleccionado = document.getElementById('select-departamento').value;
+        const listaCiudades = document.getElementById('lista-ciudades');
+        const inputCiudad = document.getElementById('input-ciudad');
+
+        inputCiudad.value = "";
+        listaCiudades.innerHTML = "";
+
+        if (deptoSeleccionado && colombiaData[deptoSeleccionado]) {
+            colombiaData[deptoSeleccionado].sort().forEach(ciudad => {
+                const option = document.createElement('option');
+                option.value = ciudad;
+                listaCiudades.appendChild(option);
+            });
+            inputCiudad.placeholder = "Empieza a escribir...";
+        }
+    }
+
+    // --- 3. CONEXIÓN A LA BASE DE DATOS ---
+
+    // REGISTRO
+    async function registrarVoluntario(event) {
+        event.preventDefault();
+        const btn = document.getElementById('btn-register');
+        btn.disabled = true;
+
+        const email = document.getElementById('reg-whatsapp').value + "@guardianes.com";
+        const pass = document.getElementById('reg-password').value;
+
+        // PASO 1: Crear el usuario en Supabase Auth
+        const { data: authData, error: authError } = await supabaseApp.auth.signUp({
+            email: email,
+            password: pass,
+        });
+
+        if (authError) {
+            alert("Error de autenticación: " + authError.message);
+            btn.disabled = false;
+            return;
+        }
+
+        const userId = authData.user.id;
+
+        // --- RECOLECCIÓN DE DATOS ESPECIALES ---
+        
+        // 1. Extraer los checkboxes seleccionados (Áreas de aporte)
+        const areasCheckboxes = document.querySelectorAll('.custom-checkbox:checked');
+        const areasSeleccionadas = Array.from(areasCheckboxes).map(cb => cb.value);
+
+        // 2. Extraer el radio button seleccionado (Firmeza)
+        const apoyoRadio = document.querySelector('input[name="apoyo"]:checked');
+        const firmezaValor = apoyoRadio ? parseInt(apoyoRadio.value) : null;
+
+        // PASO 2: Guardar TODOS los datos adicionales en la tabla 'voluntarios'
+        const extraData = {
+            id: userId, 
+            nombre: document.getElementById('reg-nombre').value,
+            whatsapp: document.getElementById('reg-whatsapp').value,
+            edad: parseInt(document.getElementById('reg-edad').value),
+            departamento: document.getElementById('select-departamento').value,
+            ciudad: document.getElementById('input-ciudad').value,
+            sector: document.getElementById('reg-sector').value,
+            profesion: document.getElementById('reg-profesion').value,
+            bandera_motivacion: document.getElementById('reg-bandera').value,
+            areas_aporte: areasSeleccionadas, // Mandamos el array de opciones
+            tiempo_disponible: document.getElementById('reg-tiempo').value,
+            firmeza_apoyo: firmezaValor // Mandamos el número (1 al 5)
+        };
+
+        // Insertar en la base de datos
+        const { error: dbError } = await supabaseApp.from('voluntarios').insert([extraData]);
+
+        if (dbError) {
+            alert("Error al guardar perfil: " + dbError.message);
+        } else {
+            alert("¡Registro exitoso!");
+            window.location.href = "inicio.html";
+        }
+        btn.disabled = false;
+    }
+
+    // LOGIN
+    async function iniciarSesion(event) {
+        event.preventDefault();
+        const wapp = document.getElementById('log-whatsapp').value;
+        const pass = document.getElementById('log-password').value;
+
+        const { data, error } = await supabaseApp.auth.signInWithPassword({
+            email: wapp + "@guardianes.com",
+            password: pass,
+        });
+
+        if (error) {
+            alert("Acceso denegado: " + error.message);
+        } else {
+            // Supabase guarda el token automáticamente en el navegador
+            window.location.href = "inicio.html";
+        }
+    }
+    // Función para generar un Hash SHA-256 de la contraseña
+    async function hashPassword(string) {
+        const utf8 = new TextEncoder().encode(string);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', utf8);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 </script>
 
