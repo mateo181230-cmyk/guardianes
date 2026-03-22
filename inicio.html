@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Guardianes Santander - Voluntarios</title>
     <link rel="icon" href="logo.webp" type="image/x-icon">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#F1A42A">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="logo.webp">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -878,7 +883,7 @@ document.getElementById('modalPreview').addEventListener('click', function(e) {
         document.getElementById('modalRegistro').classList.add('hidden');
     }
 
-    // ==================== CONFIRMAR REGISTRO + GUARDAR EN STORAGE ====================
+    // ==================== CONFIRMAR REGISTRO + GUARDAR EN STORAGE (CON SOPORTE OFFLINE) ====================
     async function confirmarRegistro() {
         if (!currentUser) return alert('Debes iniciar sesión');
 
@@ -894,12 +899,47 @@ document.getElementById('modalPreview').addEventListener('click', function(e) {
             case "4": puntosSumados = 5;  nombreAccion = "Debate en redes"; break;
         }
 
+        // Validar tamaño del archivo (máx 50MB)
+        if (archivo && typeof isFileSizeValid === 'function' && !isFileSizeValid(archivo)) {
+            return;
+        }
+
+        // ========== MODO OFFLINE: Guardar en IndexedDB ==========
+        if (!navigator.onLine) {
+            try {
+                let blob = null;
+                if (archivo) {
+                    blob = await fileToBlob(archivo);
+                }
+
+                await saveActionOffline({
+                    userId: currentUser.id,
+                    tipo: nombreAccion,
+                    puntos: puntosSumados,
+                    fileName: archivo ? archivo.name : null,
+                    fileType: archivo ? archivo.type : null,
+                    fileBlob: blob
+                });
+
+                alert(`📱 Sin internet — tu acción "${nombreAccion}" (+${puntosSumados} pts) fue guardada y se enviará automáticamente cuando vuelvas a tener conexión.`);
+                cerrarModalRegistro();
+
+                // Actualizar badge de pendientes
+                const pending = await getPendingActions();
+                updateSyncBadge(pending.length, false);
+            } catch (e) {
+                alert('Error al guardar offline: ' + e.message);
+            }
+            return;
+        }
+
+        // ========== MODO ONLINE: Subir a Supabase normalmente ==========
         let evidenceUrl = null;
         if (archivo) {
             try {
                 const fileName = `${currentUser.id}-${Date.now()}-${archivo.name}`;
                 const { error: uploadError } = await supabaseApp.storage
-                    .from('evidences')           // ← Asegúrate de crear este bucket en Supabase Storage
+                    .from('evidences')
                     .upload(fileName, archivo);
 
                 if (uploadError) throw uploadError;
@@ -907,14 +947,30 @@ document.getElementById('modalPreview').addEventListener('click', function(e) {
                 const { data } = supabaseApp.storage.from('evidences').getPublicUrl(fileName);
                 evidenceUrl = data.publicUrl;
             } catch (e) {
-                alert('Error al subir archivo: ' + e.message);
+                // Si falla la subida (puede haber perdido conexión durante el intento), guardar offline
+                try {
+                    const blob = await fileToBlob(archivo);
+                    await saveActionOffline({
+                        userId: currentUser.id,
+                        tipo: nombreAccion,
+                        puntos: puntosSumados,
+                        fileName: archivo.name,
+                        fileType: archivo.type,
+                        fileBlob: blob
+                    });
+                    alert(`📱 Se perdió la conexión — tu acción fue guardada offline y se enviará cuando tengas internet.`);
+                    cerrarModalRegistro();
+                    const pending = await getPendingActions();
+                    updateSyncBadge(pending.length, false);
+                } catch (offlineErr) {
+                    alert('Error al subir archivo: ' + e.message);
+                }
                 return;
             }
         }
 
-        // Insertar en la tabla acciones (usa el UUID del usuario autenticado)
         const { error } = await supabaseApp.from('acciones').insert({
-            codigo_voluntario: currentUser.id,   // ← UUID correcto
+            codigo_voluntario: currentUser.id,
             tipo: nombreAccion,
             puntos: puntosSumados,
             evidencia_url: evidenceUrl
@@ -927,7 +983,7 @@ document.getElementById('modalPreview').addEventListener('click', function(e) {
 
         alert(`¡Excelente! Has sumado ${puntosSumados} puntos`);
         cerrarModalRegistro();
-        cargarFeed();   // ← Recarga el feed automáticamente
+        cargarFeed();
     }
 
     // ==================== NAVEGACIÓN (llama al feed al abrir la página) ====================
@@ -1145,6 +1201,26 @@ document.getElementById('modalPreview').addEventListener('click', function(e) {
             button.classList.toggle('dept-title-active');
         });
     });
+</script>
+
+<script src="offline-sync.js"></script>
+<script>
+    // Registrar Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => {
+                    console.log('[PWA] Service Worker registrado:', reg.scope);
+                    // Intentar registrar Background Sync
+                    if ('sync' in reg) {
+                        reg.sync.register('sync-acciones')
+                            .then(() => console.log('[PWA] Background Sync registrado'))
+                            .catch(err => console.log('[PWA] Background Sync no soportado:', err));
+                    }
+                })
+                .catch(err => console.error('[PWA] Error registrando SW:', err));
+        });
+    }
 </script>
 </body>
 </html>
