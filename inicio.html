@@ -1650,6 +1650,58 @@
                         return;
                     }
 
+                    // ====== ACTUALIZAR RACHA Y PUNTOS EN LA TABLA VOLUNTARIOS ======
+                    try {
+                        // 1. Obtener el perfil actual del voluntario
+                        const { data: perfilActual } = await supabaseApp
+                            .from('voluntarios')
+                            .select('racha, ultima_accion_fecha, total_puntos')
+                            .eq('id', userId)
+                            .single();
+
+                        if (perfilActual) {
+                            const hoy = new Date().toISOString().split('T')[0];
+                            const ultimaFecha = perfilActual.ultima_accion_fecha;
+                            const puntosActuales = perfilActual.total_puntos || 0;
+                            let nuevaRacha = perfilActual.racha || 0;
+
+                            if (ultimaFecha === hoy) {
+                                // Ya registró hoy → la racha no cambia, solo suman puntos
+                            } else if (ultimaFecha) {
+                                const ayer = new Date();
+                                ayer.setDate(ayer.getDate() - 1);
+                                const ayerStr = ayer.toISOString().split('T')[0];
+                                if (ultimaFecha === ayerStr) {
+                                    // Registró ayer → racha continúa
+                                    nuevaRacha += 1;
+                                } else {
+                                    // No registró ayer → racha se reinicia
+                                    nuevaRacha = 1;
+                                }
+                            } else {
+                                // Primera acción → racha comienza en 1
+                                nuevaRacha = 1;
+                            }
+
+                            // 2. Actualizar racha, fecha y puntos en la BD
+                            await supabaseApp
+                                .from('voluntarios')
+                                .update({
+                                    racha: nuevaRacha,
+                                    ultima_accion_fecha: hoy,
+                                    total_puntos: puntosActuales + puntosSumados
+                                })
+                                .eq('id', userId);
+
+                            // 3. Actualizar la racha en la UI inmediatamente
+                            const perfilActualizado = { ...perfilActual, racha: nuevaRacha, ultima_accion_fecha: hoy };
+                            actualizarRachaUI(perfilActualizado);
+                        }
+                    } catch (rachaErr) {
+                        console.error('Error actualizando racha:', rachaErr);
+                    }
+                    // =================================================================
+
                     showCustomAlert(`¡Excelente! Has sumado ${puntosSumados} puntos`);
                     cerrarModalRegistro();
                     cargarFeed();
