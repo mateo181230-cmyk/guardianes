@@ -268,38 +268,75 @@
                 </div>
                 <script>
                     async function cargarTareasDigitales() {
-                        // Apuntamos al archivo en la misma carpeta
-                        const archivoLocal = 'tareas.json';
                         const contenedor = document.getElementById('tareas-digitales');
+                        contenedor.innerHTML = '<p class="text-xs text-gray-400 italic">Cargando tareas...</p>';
 
+                        let tareas = [];
+
+                        // 1. Cargar el JSON local
                         try {
-                            // Al ser local, la respuesta es casi instantánea
-                            const response = await fetch(archivoLocal);
-
-                            if (!response.ok) throw new Error("No se encontró el archivo JSON");
-
-                            const tareas = await response.json();
-
-                            contenedor.innerHTML = ""; // Limpiar el "Cargando..."
-
-                            tareas.forEach(tarea => {
-                                const link = document.createElement('a');
-                                link.href = tarea.url;
-                                link.target = "_blank";
-                                link.rel = "noopener noreferrer";
-                                link.className = "bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center";
-
-                                link.innerHTML = `<i class="${tarea.icon} mr-1"></i>${tarea.text}`;
-
-                                contenedor.appendChild(link);
-                            });
-
+                            const response = await fetch('tareas.json');
+                            if (response.ok) {
+                                tareas = await response.json();
+                            } else {
+                                console.warn('No se pudo cargar tareas.json');
+                            }
                         } catch (error) {
-                            console.error("Error al leer tareas.json:", error);
-                            contenedor.innerHTML = "<p class='text-xs text-red-500'>Tareas no disponibles hoy.</p>";
+                            console.error('Error al leer tareas.json:', error);
                         }
-                    }
 
+                        // 2. Obtener el último video de YouTube dinámicamente
+                        try {
+                            // Reemplaza con el ID correcto del canal de Sergio Fajardo
+                            const user = 'SergioFajardoValderrama';
+                            const feedUrl = `https://www.youtube.com/feeds/videos.xml?user=${user}`;
+                            const proxyUrl = 'https://api.allorigins.win/raw?url=';
+                            const response = await fetch(proxyUrl + encodeURIComponent(feedUrl));
+                            const xmlText = await response.text();
+
+                            const parser = new DOMParser();
+                            const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+                            const entries = xmlDoc.getElementsByTagName('entry');
+                            if (entries.length > 0) {
+                                const ultimoVideo = entries[0];
+                                const titulo = ultimoVideo.getElementsByTagName('title')[0]?.textContent || 'Nuevo video';
+                                let videoUrl = '';
+                                const linkElement = ultimoVideo.getElementsByTagName('link')[0];
+                                if (linkElement) videoUrl = linkElement.getAttribute('href');
+                                if (!videoUrl) {
+                                    const videoId = ultimoVideo.getElementsByTagName('yt:videoId')[0]?.textContent;
+                                    if (videoId) videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                                }
+                                if (videoUrl) {
+                                    tareas.unshift({
+                                        url: videoUrl,
+                                        text: `🎬 Último video: ${titulo.substring(0, 40)}${titulo.length > 40 ? '…' : ''}`,
+                                        icon: 'fa-brands fa-youtube'
+                                    });
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Error obteniendo último video de YouTube:', error);
+                            // Fallback: enlace al canal
+                            tareas.unshift({
+                                url: 'https://www.youtube.com/@sergiofajardov',
+                                text: 'Ver último video en YouTube',
+                                icon: 'fa-brands fa-youtube'
+                            });
+                        }
+
+                        // 3. Renderizar todas las tareas (JSON + video)
+                        contenedor.innerHTML = '';
+                        tareas.forEach(tarea => {
+                            const link = document.createElement('a');
+                            link.href = tarea.url;
+                            link.target = '_blank';
+                            link.rel = 'noopener noreferrer';
+                            link.className = 'bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center';
+                            link.innerHTML = `<i class="${tarea.icon} mr-1"></i>${tarea.text}`;
+                            contenedor.appendChild(link);
+                        });
+                    }
                     // Ejecutar al cargar la página
                     document.addEventListener('DOMContentLoaded', cargarTareasDigitales);
                 </script>
@@ -322,17 +359,33 @@
                     <h2 class="font-bold text-sm text-brand-blue mb-3">SIGUE AL CANDIDATO (Click encima para seguir)
                     </h2>
                     <div class="flex flex-wrap gap-2 mb-4">
-                        <a href="https://www.facebook.com/sergiofajardov" target="_blank" rel="noopener noreferrer"
+                        <!-- Botón Facebook -->
+                        <a href="https://www.facebook.com/SergioFajardoV" target="_blank" rel="noopener noreferrer"
                             class="bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center">
-                            <i class="fa-brands fa-facebook mr-1"></i>@SergioFajardo
+                            <i class="fa-brands fa-facebook mr-1"></i>Sergio Fajardo
                         </a>
-                        <a href="https://twitter.com/sergio_fajardo" target="_blank" rel="noopener noreferrer"
+                        <!-- Botón Twitter/X -->
+                        <a href="https://x.com/sergio_fajardo/status/2031777994176368692" target="_blank"
+                            rel="noopener noreferrer"
                             class="bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center">
-                            <i class="fa-brands fa-twitter mr-1"></i>@Sergio_Fajardo
+                            <i class="fa-brands fa-twitter mr-1"></i>@sergio_fajardo
                         </a>
-                        <a href="https://www.instagram.com/sergiofajardov" target="_blank" rel="noopener noreferrer"
+                        <!-- Botón Instagram -->
+                        <a href="https://www.instagram.com/sergiofajardovalderrama/" target="_blank"
+                            rel="noopener noreferrer"
                             class="bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center">
-                            <i class="fa-brands fa-instagram mr-1"></i>@SergioFajardoValderrama
+                            <i class="fa-brands fa-instagram mr-1"></i>@sergiofajardovalderrama
+                        </a>
+                        <!-- Botón YouTube -->
+                        <a href="https://www.youtube.com/@SergioFajardoValderrama" target="_blank"
+                            rel="noopener noreferrer"
+                            class="bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center">
+                            <i class="fa-brands fa-youtube mr-1"></i>Canal YouTube
+                        </a>
+                        <!-- Botón TikTok -->
+                        <a href="https://www.tiktok.com/@sergiofajardov" target="_blank" rel="noopener noreferrer"
+                            class="bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center">
+                            <i class="fa-brands fa-tiktok mr-1"></i>TikTok
                         </a>
                     </div>
                     <h2 class="font-bold text-sm text-brand-blue mb-3 flex items-center gap-2">

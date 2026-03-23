@@ -1,17 +1,27 @@
 [
   {
-    "url": "https://vt.tiktok.com/ZSuGee5kb/",
+    "url": "https://www.tiktok.com/@sergiofajardov",
     "text": "Comenta, da like",
     "icon": "fa-brands fa-tiktok"
   },
   {
-    "url": "https://www.instagram.com/sergiofajardov",
+    "url": "https://www.instagram.com/sergiofajardovalderrama/",
     "text": "Sigue",
     "icon": "fa-brands fa-instagram"
   },
   {
-    "url": "https://twitter.com/sergio_fajardo",
-    "text": "Contesta encuesta",
+    "url": "https://x.com/sergio_fajardo/status/2031777994176368692",
+    "text": "Mira este video",
     "icon": "fa-brands fa-twitter"
+  },
+  {
+    "url": "https://www.facebook.com/SergioFajardoV?locale=es_LA",
+    "text": "Comparte",
+    "icon": "fa-brands fa-facebook"
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=2q41777994176368692",
+    "text": "Comparte",
+    "icon": "fa-brands fa-youtube"
   }
 ]
