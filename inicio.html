@@ -1223,6 +1223,7 @@
                         likes,
                         voluntarios:codigo_voluntario(
                             nombre,
+                            departamento,
                             total_puntos
                         )
             `)
@@ -1260,7 +1261,7 @@
                     data.forEach(item => {
                         const perfil = item.voluntarios || {};
                         const nombreVoluntario = perfil.nombre || 'Voluntario';
-                        const ciudadVoluntario = perfil.departamento || 'Colombia';
+                        const ciudadVoluntario = perfil.departamento || 'Santander';
                         const totalPuntos = perfil.total_puntos || 0;
                         const rango = obtenerRangoVoluntario(totalPuntos);
 
@@ -1317,7 +1318,8 @@
                     <div class="ml-2 bg-brand-light border border-brand-yellow/30 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-semibold text-brand-blue leading-snug">
-                                <span class="text-gray-800 font-normal">${nombreVoluntario}</span> realizó
+                                <span class="text-gray-800 font-normal">${nombreVoluntario}</span>
+                                <span class="text-gray-400 font-normal text-xs">en</span> <span class="text-xs font-semibold">${ciudadVoluntario}</span> realizó
                             </p>
                             <p class="text-sm text-gray-700 font-bold truncate">${item.tipo}</p>
                             <p class="text-[10px] text-brand-red font-bold uppercase tracking-wider mt-0.5">+${item.puntos} Puntos Serios</p>
