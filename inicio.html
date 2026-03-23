@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="logo.webp">
-    </div>
+
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -38,6 +38,10 @@
         window.supabaseApp = supabaseApp;
     </script>
     <style>
+        #racha-icono {
+            transition: all 0.3s ease;
+        }
+
         #customAlert {
             visibility: hidden;
             opacity: 0;
@@ -83,6 +87,9 @@
 <body class="bg-gray-100 flex justify-center font-sans text-gray-800">
 
     <script>
+        function cerrarModal() {
+            document.getElementById('modalDescargas').classList.add('hidden');
+        }
         function showCustomAlert(message, title = 'Aviso') {
             const modal = document.getElementById('customAlert');
             const titleEl = document.getElementById('alertTitle');
@@ -110,11 +117,14 @@
             document.getElementById('user-depto').innerText = perfil.departamento;
             document.getElementById('user-ciudad').innerText = perfil.ciudad;
             document.getElementById('user-puntos-total').innerText = puntosActuales;
-            document.getElementById('codigo_vol').innerText = perfil.id;
+            document.getElementById('codigo_vol').setAttribute('data-uuid', perfil.id);
             const imgElement = document.getElementById('imagenPerfil');
             const nivelElement = document.getElementById('nivel_2');
             if (imgElement) imgElement.src = rango.imagen;
             if (nivelElement) nivelElement.innerText = rango.nivel;
+            const codigoCorto = perfil.id.substring(0, 4) + perfil.id.substring(perfil.id.length - 4);
+            document.getElementById('codigo_vol').innerText = codigoCorto;
+
         }
 
         async function obtenerDatosUsuario() {
@@ -147,15 +157,49 @@
                 // Guardar en localStorage para uso offline
                 localStorage.setItem('perfil_voluntario', JSON.stringify(perfil));
                 actualizarUIconPerfil(perfil);
+
+                // Actualizar la racha en la UI
+                actualizarRachaUI(perfil);
+
             } else if (error && !navigator.onLine) {
                 // Fallback offline: usar datos guardados
                 const storedPerfil = localStorage.getItem('perfil_voluntario');
                 if (storedPerfil) {
-                    actualizarUIconPerfil(JSON.parse(storedPerfil));
+                    const perfilOffline = JSON.parse(storedPerfil);
+                    actualizarUIconPerfil(perfilOffline);
+                    actualizarRachaUI(perfilOffline);
                 }
+            }
+            if (perfil.is_admin) {
+                const btnAdmin = document.getElementById('btn-admin');
+                if (btnAdmin) btnAdmin.classList.remove('hidden');
             }
         }
         obtenerDatosUsuario()
+        function actualizarRachaUI(perfil) {
+            const rachaElement = document.getElementById('racha-valor');
+            if (rachaElement) {
+                rachaElement.innerText = perfil.racha || 0;
+            }
+
+            const hoy = new Date().toISOString().split('T')[0];
+            const mensaje = document.getElementById('mensaje-racha');
+            const rachaIcono = document.getElementById('racha-icono');
+
+            if (perfil.ultima_accion_fecha === hoy) {
+                // Ya registró hoy → lápiz con colores de Colombia
+                mensaje.innerText = '✅ ¡Ya aportaste hoy!';
+                rachaIcono.classList.add('bg-gradient-to-r', 'from-yellow-400', 'via-blue-500', 'to-red-600');
+                rachaIcono.classList.remove('bg-brand-yellow');
+                rachaIcono.style.boxShadow = '0 0 10px rgba(251, 191, 36, 0.5)';
+            } else {
+                // No registró hoy → fondo amarillo normal
+                mensaje.innerText = '📝 Registra una acción hoy y mantén la racha';
+                rachaIcono.classList.remove('bg-gradient-to-r', 'from-yellow-400', 'via-blue-500', 'to-red-600');
+                rachaIcono.classList.add('bg-brand-yellow');
+                rachaIcono.style.boxShadow = '';
+            }
+        }
         function updateOfflineIndicator() {
             const indicator = document.getElementById('offline-indicator');
             if (!navigator.onLine) indicator.classList.remove('hidden');
@@ -268,74 +312,36 @@
                 </div>
                 <script>
                     async function cargarTareasDigitales() {
+                        // Apuntamos al archivo en la misma carpeta
+                        const archivoLocal = 'tareas.json';
                         const contenedor = document.getElementById('tareas-digitales');
-                        contenedor.innerHTML = '<p class="text-xs text-gray-400 italic">Cargando tareas...</p>';
 
-                        let tareas = [];
-
-                        // 1. Cargar el JSON local
                         try {
-                            const response = await fetch('tareas.json');
-                            if (response.ok) {
-                                tareas = await response.json();
-                            } else {
-                                console.warn('No se pudo cargar tareas.json');
-                            }
-                        } catch (error) {
-                            console.error('Error al leer tareas.json:', error);
-                        }
+                            // Al ser local, la respuesta es casi instantánea
+                            const response = await fetch(archivoLocal);
 
-                        // 2. Obtener el último video de YouTube dinámicamente
-                        try {
-                            // Reemplaza con el ID correcto del canal de Sergio Fajardo
-                            const user = 'SergioFajardoValderrama';
-                            const feedUrl = `https://www.youtube.com/feeds/videos.xml?user=${user}`;
-                            const proxyUrl = 'https://api.allorigins.win/raw?url=';
-                            const response = await fetch(proxyUrl + encodeURIComponent(feedUrl));
-                            const xmlText = await response.text();
+                            if (!response.ok) throw new Error("No se encontró el archivo JSON");
 
-                            const parser = new DOMParser();
-                            const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-                            const entries = xmlDoc.getElementsByTagName('entry');
-                            if (entries.length > 0) {
-                                const ultimoVideo = entries[0];
-                                const titulo = ultimoVideo.getElementsByTagName('title')[0]?.textContent || 'Nuevo video';
-                                let videoUrl = '';
-                                const linkElement = ultimoVideo.getElementsByTagName('link')[0];
-                                if (linkElement) videoUrl = linkElement.getAttribute('href');
-                                if (!videoUrl) {
-                                    const videoId = ultimoVideo.getElementsByTagName('yt:videoId')[0]?.textContent;
-                                    if (videoId) videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-                                }
-                                if (videoUrl) {
-                                    tareas.unshift({
-                                        url: videoUrl,
-                                        text: `🎬 Último video: ${titulo.substring(0, 40)}${titulo.length > 40 ? '…' : ''}`,
-                                        icon: 'fa-brands fa-youtube'
-                                    });
-                                }
-                            }
-                        } catch (error) {
-                            console.error('Error obteniendo último video de YouTube:', error);
-                            // Fallback: enlace al canal
-                            tareas.unshift({
-                                url: 'https://www.youtube.com/@sergiofajardov',
-                                text: 'Ver último video en YouTube',
-                                icon: 'fa-brands fa-youtube'
+                            const tareas = await response.json();
+
+                            contenedor.innerHTML = ""; // Limpiar el "Cargando..."
+
+                            tareas.forEach(tarea => {
+                                const link = document.createElement('a');
+                                link.href = tarea.url;
+                                link.target = "_blank";
+                                link.rel = "noopener noreferrer";
+                                link.className = "bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center";
+
+                                link.innerHTML = `<i class="${tarea.icon} mr-1"></i>${tarea.text}`;
+
+                                contenedor.appendChild(link);
                             });
-                        }
 
-                        // 3. Renderizar todas las tareas (JSON + video)
-                        contenedor.innerHTML = '';
-                        tareas.forEach(tarea => {
-                            const link = document.createElement('a');
-                            link.href = tarea.url;
-                            link.target = '_blank';
-                            link.rel = 'noopener noreferrer';
-                            link.className = 'bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center';
-                            link.innerHTML = `<i class="${tarea.icon} mr-1"></i>${tarea.text}`;
-                            contenedor.appendChild(link);
-                        });
+                        } catch (error) {
+                            console.error("Error al leer tareas.json:", error);
+                            contenedor.innerHTML = "<p class='text-xs text-red-500'>Tareas no disponibles hoy.</p>";
+                        }
                     }
                     // Ejecutar al cargar la página
                     document.addEventListener('DOMContentLoaded', cargarTareasDigitales);
@@ -365,8 +371,7 @@
                             <i class="fa-brands fa-facebook mr-1"></i>Sergio Fajardo
                         </a>
                         <!-- Botón Twitter/X -->
-                        <a href="https://x.com/sergio_fajardo/status/2031777994176368692" target="_blank"
-                            rel="noopener noreferrer"
+                        <a href="https://x.com/sergio_fajardo" target="_blank" rel="noopener noreferrer"
                             class="bg-brand-light px-3 py-1.5 rounded-full text-xs font-semibold text-brand-blue border border-brand-yellow/20 hover:bg-brand-yellow/10 transition flex items-center">
                             <i class="fa-brands fa-twitter mr-1"></i>@sergio_fajardo
                         </a>
@@ -394,10 +399,85 @@
                     </h2>
 
                     <div class="flex flex-wrap gap-2 text-brand-red font-bold text-xs">
+
                         <span onclick="copiarNumeral(this)"
-                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#FajardoPresidente</span>
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#PlanGuardian</span>
+
                         <span onclick="copiarNumeral(this)"
-                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#AdelanteConFajardo</span>
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#SeguridadParaTodos</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#SaludSinBarreras</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#SistemaDeSaludDigno</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#CuentasClaras</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#RecursosSagrados</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#EnergiaSinApagones</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#TransicionResponsable</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#CeroCorrupcion</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#CeroImpunidad</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#JusticiaParaTodos</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#ColombiaGlobal</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#EducacionEsFuturo</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#ColombiaDigital</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#ColombiaEmprende</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#ColombiaProduce</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#SembrarProgreso</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#CuidemosElPlaneta</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#ColombiaConecta</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#TurismoColombia</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#MinimoDigno</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#TrabajoDigno</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#ViviendaDigna</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#CulturaViva</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#DeporteParaTodos</span>
+
+                        <span onclick="copiarNumeral(this)"
+                            class="bg-brand-light/50 px-3 py-1.5 rounded-full border border-brand-red/20 cursor-pointer hover:bg-brand-red hover:text-white transition-all active:scale-95">#ColombiaIncluyente</span>
+
                     </div>
 
                     <div id="toast-copy"
@@ -431,28 +511,46 @@
                 </div>
 
                 <div class="bg-brand-light p-4 rounded-xl border border-brand-yellow/30 !mt-1">
-                    <h2 class="font-bold text-sm text-brand-blue mb-3">KIT DE CAMPAÑA</h2>
-                    <div class="grid grid-cols-3 gap-2">
+                    <h2 class="font-bold text-sm text-brand-blue mb-3 text-center">
+                        KIT DE CAMPAÑA
+                    </h2>
+
+                    <div class="grid grid-cols-2 gap-4 max-w-xs mx-auto">
+
                         <button onclick="abrirModal('imagenes')"
-                            class="bg-white p-4 rounded-lg shadow-sm flex flex-col items-center gap-2 active:bg-gray-50 transition border border-gray-100">
-                            <i class="fa-solid fa-images text-brand-red text-2xl"></i>
-                            <span class="text-xs font-semibold text-gray-700">Imágenes</span>
+                            class="bg-white p-6 rounded-xl shadow-sm flex flex-col items-center gap-3 active:bg-gray-50 transition border border-gray-100">
+                            <i class="fa-solid fa-images text-brand-red text-3xl"></i>
+                            <span class="text-sm font-semibold text-gray-700">Imágenes</span>
                         </button>
+
                         <button onclick="abrirModal('videos')"
-                            class="bg-white p-4 rounded-lg shadow-sm flex flex-col items-center gap-2 active:bg-gray-50 transition border border-gray-100">
-                            <i class="fa-solid fa-circle-play text-brand-blue text-2xl"></i>
-                            <span class="text-xs font-semibold text-gray-700">Videos</span>
+                            class="bg-white p-6 rounded-xl shadow-sm flex flex-col items-center gap-3 active:bg-gray-50 transition border border-gray-100">
+                            <i class="fa-solid fa-circle-play text-brand-blue text-3xl"></i>
+                            <span class="text-sm font-semibold text-gray-700">Videos</span>
                         </button>
+
                         <button onclick="abrirModal('pdf')"
-                            class="bg-white p-4 rounded-lg shadow-sm flex flex-col items-center gap-2 active:bg-gray-50 transition border border-gray-100">
-                            <i class="fa-regular fa-file-pdf text-brand-red text-2xl"></i>
-                            <span class="text-xs font-semibold text-gray-700">Folletos</span>
+                            class="bg-white p-6 rounded-xl shadow-sm flex flex-col items-center gap-3 active:bg-gray-50 transition border border-gray-100">
+                            <i class="fa-regular fa-file-pdf text-brand-red text-3xl"></i>
+                            <span class="text-sm font-semibold text-gray-700">Folletos</span>
                         </button>
+
                         <button onclick="abrirModal('youtube')"
-                            class="bg-white p-4 rounded-lg shadow-sm flex flex-col items-center gap-2 active:bg-gray-50 transition border border-gray-100">
-                            <i class="fa-brands fa-youtube text-red-600 text-2xl"></i>
-                            <span class="text-xs font-semibold text-gray-700">YouTube</span>
+                            class="bg-white p-6 rounded-xl shadow-sm flex flex-col items-center gap-3 active:bg-gray-50 transition border border-gray-100">
+                            <i class="fa-brands fa-youtube text-red-600 text-3xl"></i>
+                            <span class="text-sm font-semibold text-gray-700">YouTube</span>
                         </button>
+
+
+                    </div>
+                    <div id="kitResultados" class="mt-6 hidden">
+                        <div class="flex justify-between items-center mb-3 border-b border-gray-200 pb-2">
+                            <h3 id="kitTitulo" class="font-bold text-sm text-brand-blue"></h3>
+                            <button onclick="cerrarKit()" class="text-gray-400 hover:text-brand-red transition-colors">
+                                <i class="fa-solid fa-xmark text-xl"></i>
+                            </button>
+                        </div>
+                        <div id="kitContenido" class="space-y-4 max-h-96 overflow-y-auto pr-1"></div>
                     </div>
 
                     <div id="modalDescargas"
@@ -461,7 +559,8 @@
                             class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-fade-in">
                             <div class="p-4 border-b flex justify-between items-center bg-gray-50">
                                 <h3 id="modalTitulo"
-                                    class="font-bold text-brand-blue uppercase text-sm tracking-widest"></h3>
+                                    class="font-bold text-brand-blue uppercase text-sm tracking-widest">
+                                </h3>
                                 <button onclick="cerrarModal()"
                                     class="text-gray-400 hover:text-brand-red transition-colors">
                                     <i class="fa-solid fa-circle-xmark text-2xl"></i>
@@ -497,42 +596,42 @@
                 </div>
                 <script>
                     // 1. Abrir lista de archivos (AHORA DINÁMICO)
+                    // Abrir el kit en línea (debajo de los botones)
                     async function abrirModal(tipo) {
-                        const modal = document.getElementById('modalDescargas');
-                        const contenido = document.getElementById('modalContenido');
+                        const contenedor = document.getElementById('kitContenido');
+                        const tituloElemento = document.getElementById('kitTitulo');
+                        const kitResultados = document.getElementById('kitResultados');
+
                         const titulos = {
                             'imagenes': 'Imágenes',
                             'videos': 'Videos Internos',
                             'pdf': 'Folletos y Guías',
                             'youtube': 'Videos de YouTube'
                         };
-                        document.getElementById('modalTitulo').innerText = titulos[tipo] || tipo;
-                        contenido.innerHTML = '<div class="text-center p-6 text-gray-400"><i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2"></i><br>Cargando...</div>';
-                        modal.classList.remove('hidden');
+                        tituloElemento.innerText = titulos[tipo] || tipo;
+                        contenedor.innerHTML = '<div class="text-center p-4 text-gray-400"><i class="fa-solid fa-circle-notch fa-spin text-xl"></i> Cargando...</div>';
+                        kitResultados.classList.remove('hidden');
+                        // Desplazar suavemente hasta el área del kit
+                        kitResultados.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
                         let data = [];
-
-                        // Intentar obtener datos online primero
                         if (navigator.onLine) {
                             const { data: fetched, error } = await supabaseApp.from(tipo).select('*').order('created_at', { ascending: false });
                             if (!error && fetched) {
                                 data = fetched;
-                                // Guardar en localStorage para offline
                                 localStorage.setItem(`kit_${tipo}`, JSON.stringify(data));
                             } else {
-                                // Si falla la consulta online, usar caché
                                 const cached = localStorage.getItem(`kit_${tipo}`);
                                 if (cached) data = JSON.parse(cached);
                             }
                         } else {
-                            // Offline: usar caché
                             const cached = localStorage.getItem(`kit_${tipo}`);
                             if (cached) data = JSON.parse(cached);
                         }
 
-                        contenido.innerHTML = '';
+                        contenedor.innerHTML = '';
                         if (data.length === 0) {
-                            contenido.innerHTML = '<div class="text-center p-4 text-gray-400">No hay contenido disponible offline.</div>';
+                            contenedor.innerHTML = '<div class="text-center p-4 text-gray-400">No hay contenido disponible offline.</div>';
                             return;
                         }
 
@@ -542,22 +641,41 @@
                             if (tipo === 'pdf') icono = 'fa-file-pdf';
 
                             const source = tipo === 'youtube' ? item.video_id : item.preview;
+                            const downloadUrl = item.link || source; // Suponiendo que `link` es la URL de descarga directa
 
-                            contenido.innerHTML += `
-            <div class="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between hover:border-brand-yellow transition cursor-pointer mb-2" 
-                onclick="lanzarPreview('${tipo}', '${source}', '${item.link}')">
-                <div class="flex items-center gap-3">
-                    <i class="fa-solid ${icono} ${tipo === 'youtube' ? 'text-red-600' : 'text-gray-400'}"></i>
-                    <span class="text-sm font-bold text-gray-700">${item.nombre}</span>
+                            const card = document.createElement('div');
+                            card.className = 'bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition';
+                            card.innerHTML = `
+            <div class="flex items-center justify-between p-3 border-b bg-gray-50">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid ${icono} ${tipo === 'youtube' ? 'text-red-600' : 'text-gray-500'}"></i>
+                    <span class="font-semibold text-gray-700 text-sm">${item.nombre}</span>
                 </div>
-                <div class="text-brand-red p-2"><i class="fa-solid fa-eye text-sm"></i></div>
+                <div class="flex gap-2">
+                    <button onclick="lanzarPreview('${tipo}', '${source}', '${downloadUrl}')" 
+                            class="text-brand-blue hover:text-brand-red transition p-1" title="Ver">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                    <a href="${downloadUrl}" download 
+                       class="text-brand-blue hover:text-brand-red transition p-1" title="Descargar">
+                        <i class="fa-solid fa-download"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="aspect-video bg-gray-100 flex items-center justify-center p-2">
+                ${tipo === 'imagenes' ? `<img src="${source}" class="max-h-32 object-contain" alt="${item.nombre}">` :
+                                    tipo === 'videos' ? `<video controls class="max-h-32 w-full"><source src="${source}"></video>` :
+                                        tipo === 'pdf' ? `<iframe src="https://docs.google.com/viewer?url=${encodeURIComponent(source)}&embedded=true" class="w-full h-32"></iframe>` :
+                                            `<iframe class="w-full h-32" src="https://www.youtube.com/embed/${source}" frameborder="0" allowfullscreen></iframe>`}
             </div>
         `;
+                            contenedor.appendChild(card);
                         });
                     }
-                    // 2. CERRAR lista de archivos
-                    function cerrarModal() {
-                        document.getElementById('modalDescargas').classList.add('hidden');
+
+                    // Cerrar el área del kit
+                    function cerrarKit() {
+                        document.getElementById('kitResultados').classList.add('hidden');
                     }
 
                     // 3. Lanzar Previsualización
@@ -873,7 +991,28 @@
 
             <!-- ==================== SECCIÓN ACCIONES (reemplaza tu sección actual) ==================== -->
             <section id="page-acciones" class="page-content hidden-page space-y-6">
-                <div class="mt-6 flex justify-center items-center">
+
+                <!-- 🏆 Tarjeta de racha (arriba) -->
+                <div
+                    class="bg-gradient-to-r from-brand-yellow/20 to-brand-light rounded-xl p-4 flex items-center gap-4 shadow-sm border border-brand-yellow/30">
+                    <div id="racha-icono"
+                        class="bg-brand-yellow w-12 h-12 rounded-full flex items-center justify-center shadow-md transition-all duration-300">
+                        <i class="fa-solid fa-pencil text-brand-blue text-2xl"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-xs text-brand-blue font-bold uppercase tracking-wider">Racha educativa</p>
+                        <p class="text-2xl font-black text-brand-blue" id="racha-valor">0</p>
+                        <p class="text-xs text-gray-600">días consecutivos aportando</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] text-gray-500 italic">¡Cada día cuenta!</p>
+                        <p class="text-xs font-medium text-brand-red" id="mensaje-racha">Registra hoy para mantener la
+                            racha</p>
+                    </div>
+                </div>
+
+                <!-- Título y botón (abajo) -->
+                <div class="mt-2 flex justify-center items-center">
                     <h2 class="font-bold text-sm text-brand-blue mb-4 uppercase">ACCIONES DE TERRENO Y DIGITALES</h2>
                     <button onclick="registrarAccion()"
                         class="bg-white border-2 border-brand-red text-brand-red px-6 py-2 rounded-full text-sm font-bold shadow-sm hover:bg-brand-red hover:text-white transition-colors">
@@ -955,7 +1094,8 @@
                                         data-desc="Asistir a los talleres para defender el voto el día de las elecciones.">
                                         Capacitación de Testigos (100 pts)</option>
                                     <option value="200"
-                                        data-desc="Ejercer como testigo en la mesa el día de la votación.">Vigilancia
+                                        data-desc="Ejercer como testigo en la mesa el día de la votación.">
+                                        Vigilancia
                                         Electoral / Día D (200 pts)</option>
                                 </optgroup>
                             </select>
@@ -1180,6 +1320,113 @@
                         `);
                     }
                 }
+                async function cargarItemsAdmin(tipo) {
+                    const contenedor = document.getElementById('admin-contenido');
+                    contenedor.innerHTML = '<div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin"></i> Cargando...</div>';
+
+                    // Obtener datos de la tabla correspondiente
+                    const { data: items, error } = await supabaseApp
+                        .from(tipo)
+                        .select('*')
+                        .order('created_at', { ascending: false });
+
+                    if (error) {
+                        contenedor.innerHTML = '<p class="text-red-500">Error cargando datos</p>';
+                        return;
+                    }
+
+                    // Formulario de creación (depende del tipo)
+                    let html = `
+        <div class="bg-white rounded-xl p-4 shadow">
+            <h3 class="font-bold text-brand-blue mb-3">Agregar nuevo ${tipo === 'youtube' ? 'video de YouTube' : tipo}</h3>
+            <form id="form-${tipo}" class="space-y-3" onsubmit="crearItem(event, '${tipo}')">
+                <input type="text" name="nombre" placeholder="Nombre" required class="w-full p-2 border rounded-lg">
+    `;
+
+                    if (tipo === 'youtube') {
+                        html += `
+                <input type="text" name="video_id" placeholder="ID del video de YouTube" required class="w-full p-2 border rounded-lg">
+                <input type="text" name="link" placeholder="Enlace del video" required class="w-full p-2 border rounded-lg">
+        `;
+                    } else {
+                        html += `
+                <input type="file" name="archivo" accept="${tipo === 'imagenes' ? 'image/*' : tipo === 'videos' ? 'video/*' : 'application/pdf'}" required class="w-full p-2 border rounded-lg">
+                <input type="text" name="preview" placeholder="URL de vista previa (opcional, para imágenes/videos)" class="w-full p-2 border rounded-lg">
+        `;
+                    }
+
+                    html += `
+                <button type="submit" class="bg-brand-blue text-white px-4 py-2 rounded-full text-sm">Guardar</button>
+            </form>
+        </div>
+    `;
+
+                    // Listado de elementos existentes
+                    html += `<div class="space-y-3 mt-6">`;
+                    items.forEach(item => {
+                        html += `
+            <div class="bg-white p-3 rounded-xl border flex justify-between items-center">
+                <div>
+                    <strong>${item.nombre}</strong><br>
+                    <span class="text-xs text-gray-500">${item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}</span>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="eliminarItem('${tipo}', ${item.id})" class="text-brand-red"><i class="fa-regular fa-trash-can"></i></button>
+                </div>
+            </div>
+        `;
+                    });
+                    html += `</div>`;
+
+                    contenedor.innerHTML = html;
+                }
+
+                async function crearItem(event, tipo) {
+                    event.preventDefault();
+                    const form = event.target;
+
+                    let datos = { nombre: form.nombre.value };
+
+                    if (tipo === 'youtube') {
+                        datos.video_id = form.video_id.value;
+                        datos.link = form.link.value;
+                    } else {
+                        const archivo = form.archivo.files[0];
+                        if (!archivo) return alert('Selecciona un archivo');
+
+                        // Subir a Storage
+                        const fileName = `${tipo}/${Date.now()}-${archivo.name}`;
+                        const { data: uploadData, error: uploadError } = await supabaseApp.storage
+                            .from('campaign')
+                            .upload(fileName, archivo);
+
+                        if (uploadError) {
+                            alert('Error al subir archivo: ' + uploadError.message);
+                            return;
+                        }
+
+                        const { data: urlData } = supabaseApp.storage.from('campaign').getPublicUrl(fileName);
+                        const publicUrl = urlData.publicUrl;
+
+                        datos.link = publicUrl;
+                        datos.preview = form.preview.value || publicUrl;
+                    }
+
+                    const { error } = await supabaseApp.from(tipo).insert(datos);
+                    if (error) alert('Error: ' + error.message);
+                    else {
+                        alert('Creado correctamente');
+                        mostrarAdminSeccion(tipo);
+                    }
+                }
+
+                async function eliminarItem(tipo, id) {
+                    if (confirm('¿Eliminar este elemento?')) {
+                        const { error } = await supabaseApp.from(tipo).delete().eq('id', id);
+                        if (error) alert('Error: ' + error.message);
+                        else mostrarAdminSeccion(tipo);
+                    }
+                }
 
                 // ==================== ABRIR MODAL REGISTRO ====================
                 async function darLike(accionId, likesActuales, boton) {
@@ -1321,12 +1568,12 @@
                         default: nombreAccion = "Acción sin clasificar";
                     }
 
-                    // Validar tamaño del archivo (máx 50MB)
+
                     if (archivo && typeof isFileSizeValid === 'function' && !isFileSizeValid(archivo)) {
                         return;
                     }
 
-                    // ========== MODO OFFLINE: Guardar en IndexedDB ==========
+
                     if (!navigator.onLine) {
                         try {
                             let blob = null;
@@ -1354,7 +1601,7 @@
                         return;
                     }
 
-                    // ========== MODO ONLINE: Subir a Supabase normalmente ==========
+
                     let evidenceUrl = null;
                     if (archivo) {
                         try {
@@ -1531,10 +1778,39 @@
                     </div>
                 </div>
             </section>
+            <section id="page-admin" class="page-content hidden-page space-y-6">
+                <h2 class="font-bold text-sm text-brand-blue uppercase">Panel de Administración</h2>
+
+                <!-- Pestañas para elegir qué gestionar -->
+                <div class="flex flex-wrap gap-2 border-b pb-2">
+                    <button onclick="mostrarAdminSeccion('eventos')"
+                        class="px-4 py-2 rounded-full text-xs font-bold bg-gray-100 text-gray-700">Eventos</button>
+                    <button onclick="mostrarAdminSeccion('imagenes')"
+                        class="px-4 py-2 rounded-full text-xs font-bold bg-gray-100 text-gray-700">Imágenes</button>
+                    <button onclick="mostrarAdminSeccion('videos')"
+                        class="px-4 py-2 rounded-full text-xs font-bold bg-gray-100 text-gray-700">Videos</button>
+                    <button onclick="mostrarAdminSeccion('pdf')"
+                        class="px-4 py-2 rounded-full text-xs font-bold bg-gray-100 text-gray-700">PDFs</button>
+                    <button onclick="mostrarAdminSeccion('youtube')"
+                        class="px-4 py-2 rounded-full text-xs font-bold bg-gray-100 text-gray-700">YouTube</button>
+                </div>
+
+                <!-- Contenedor dinámico para cada sección -->
+                <div id="admin-contenido" class="space-y-4">
+                    <p class="text-center text-gray-400">Selecciona una categoría</p>
+                </div>
+            </section>
         </main>
 
         <nav
             class="fixed bottom-0 left-0 right-0 mx-auto max-w-md bg-white border-t border-gray-200 flex justify-around items-center px-1 py-3 z-50 shadow-[0_-4px_10px_rgba(0,0,0,0.1)]">
+
+            <button id="btn-admin" onclick="showPage('admin')"
+                class="flex flex-col items-center hover:text-brand-red transition w-16 nav-item text-gray-400 hidden"
+                data-page="admin">
+                <i class="fa-solid fa-lock mb-1 text-lg"></i>
+                <span class="text-[10px] font-semibold">Admin</span>
+            </button>
 
             <button onclick="showPage('inicio')"
                 class="flex flex-col items-center w-16 nav-item text-brand-red active-nav" data-page="inicio">
@@ -1575,7 +1851,94 @@
     </div>
 
     <script>
-        // Lógica para el sistema de navegación
+
+
+
+        async function cargarEventosAdmin() {
+            const contenedor = document.getElementById('admin-contenido');
+            contenedor.innerHTML = '<div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin"></i> Cargando eventos...</div>';
+
+            const { data: eventos, error } = await supabaseApp
+                .from('eventos')
+                .select('*')
+                .order('id', { ascending: false });
+
+            if (error) {
+                contenedor.innerHTML = '<p class="text-red-500">Error cargando eventos</p>';
+                return;
+            }
+
+            let html = `
+        <div class="bg-white rounded-xl p-4 shadow">
+            <h3 class="font-bold text-brand-blue mb-3">Agregar nuevo evento</h3>
+            <form id="form-evento" class="space-y-3" onsubmit="crearEvento(event)">
+                <input type="text" name="titulo" placeholder="Título" required class="w-full p-2 border rounded-lg">
+                <input type="text" name="fecha" placeholder="Fecha (ej: Domingo 22 de Marzo)" required class="w-full p-2 border rounded-lg">
+                <input type="text" name="hora" placeholder="Hora (ej: 10:00 AM)" class="w-full p-2 border rounded-lg">
+                <input type="text" name="direccion" placeholder="Dirección / Lugar" class="w-full p-2 border rounded-lg">
+                <textarea name="descripcion" placeholder="Descripción" rows="2" class="w-full p-2 border rounded-lg"></textarea>
+                <input type="text" name="mapa" placeholder="Enlace de Google Maps (iframe src)" class="w-full p-2 border rounded-lg">
+                <input type="text" name="enlace_virtual" placeholder="Enlace Zoom/Meet (opcional)" class="w-full p-2 border rounded-lg">
+                <button type="submit" class="bg-brand-blue text-white px-4 py-2 rounded-full text-sm">Guardar Evento</button>
+            </form>
+        </div>
+    `;
+
+            html += `<div class="space-y-3 mt-6">`;
+            eventos.forEach(ev => {
+                html += `
+            <div class="bg-white p-3 rounded-xl border flex justify-between items-center">
+                <div>
+                    <strong>${ev.titulo}</strong><br>
+                    <span class="text-xs text-gray-500">${ev.fecha} ${ev.hora || ''}</span>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="editarEvento(${ev.id})" class="text-brand-blue"><i class="fa-regular fa-pen-to-square"></i></button>
+                    <button onclick="eliminarEvento(${ev.id})" class="text-brand-red"><i class="fa-regular fa-trash-can"></i></button>
+                </div>
+            </div>
+        `;
+            });
+            html += `</div>`;
+            contenedor.innerHTML = html;
+        }
+
+        async function crearEvento(e) {
+            e.preventDefault();
+            const form = e.target;
+            const datos = {
+                titulo: form.titulo.value,
+                fecha: form.fecha.value,
+                hora: form.hora.value,
+                direccion: form.direccion.value,
+                descripcion: form.descripcion.value,
+                mapa: form.mapa.value,
+                enlace_virtual: form.enlace_virtual.value
+            };
+            const { error } = await supabaseApp.from('eventos').insert(datos);
+            if (error) alert('Error: ' + error.message);
+            else {
+                alert('Evento creado');
+                mostrarAdminSeccion('eventos');
+            }
+        }
+
+        async function eliminarEvento(id) {
+            if (confirm('¿Eliminar evento?')) {
+                const { error } = await supabaseApp.from('eventos').delete().eq('id', id);
+                if (error) alert('Error: ' + error.message);
+                else mostrarAdminSeccion('eventos');
+            }
+        }
+
+        function mostrarAdminSeccion(tipo) {
+            const contenedor = document.getElementById('admin-contenido');
+            if (tipo === 'eventos') {
+                cargarEventosAdmin();
+            } else {
+                cargarItemsAdmin(tipo);
+            }
+        }
         function showPage(pageId) {
             // 1. Ocultar todas las secciones
             switch (pageId) {
