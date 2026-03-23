@@ -1264,36 +1264,41 @@
                         const totalPuntos = perfil.total_puntos || 0;
                         const rango = obtenerRangoVoluntario(totalPuntos);
 
+                        const tieneMedia = item.evidencia_url && (
+                            /\.(jpg|jpeg|png|gif|webp)$/i.test(item.evidencia_url) ||
+                            /\.(mp4|webm|mov)$/i.test(item.evidencia_url)
+                        );
+
                         let evidenciaHtml = '';
-                        if (item.evidencia_url) {
+                        if (tieneMedia) {
                             if (/\.(jpg|jpeg|png|gif|webp)$/i.test(item.evidencia_url)) {
                                 evidenciaHtml = `<img src="${item.evidencia_url}" class="w-full h-full object-cover rounded-md" alt="Evidencia">`;
-                            } else if (/\.(mp4|webm|mov)$/i.test(item.evidencia_url)) {
+                            } else {
                                 evidenciaHtml = `<video controls class="w-full h-full object-cover rounded-md"><source src="${item.evidencia_url}"></video>`;
                             }
-                        } else {
-                            evidenciaHtml = `<p class="text-gray-400">${perfil.nombre} agregó un Voluntario ☺️</p>`;
                         }
 
                         const likesActuales = item.likes || 0;
                         const colorCorazon = likesActuales > 0 ? 'text-red-500' : 'text-gray-400';
 
-                        const html = `
+                        let html = '';
+                        if (tieneMedia) {
+                            // Card completa con imagen/video
+                            html = `
                 <div class="relative animate-fade-in mb-8">
                     <div class="absolute -left-12 top-0">
                         <img src="${rango.imagen}" class="w-10 h-10 rounded-full border-2 border-white shadow-md" title="Nivel: ${rango.nivel}">
                     </div>
                     <div class="ml-2">
                         <p class="text-sm text-gray-800">
-                            <strong class="text-brand-blue">${nombreVoluntario}</strong> 
-                            <span class="text-gray-400">en</span> ${ciudadVoluntario} 
+                            <strong class="text-brand-blue">${nombreVoluntario}</strong>
+                            <span class="text-gray-400">en</span> ${ciudadVoluntario}
                             <span class="text-gray-400">—</span> ${item.tipo}
                         </p>
-                        <p class="text-[10px] text-brand-red font-bold uppercase tracking-wider mb-2">
-                            +${item.puntos} Puntos Serios
-                        <div class="bg-gray-100 h-48 rounded-xl w-full overflow-hidden flex items-center justify-center border border-gray-50 shadow-inner">
+                        <p class="text-[10px] text-brand-red font-bold uppercase tracking-wider mb-2">+${item.puntos} Puntos Serios</p>
+                        <div class="relative bg-gray-100 h-48 rounded-xl w-full overflow-hidden flex items-center justify-center border border-gray-50 shadow-inner">
                             ${evidenciaHtml}
-                            <button onclick="darLike(${item.id}, ${likesActuales}, this)" 
+                            <button onclick="darLike(${item.id}, ${likesActuales}, this)"
                                     class="absolute bottom-3 right-3 flex items-center gap-2 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg hover:scale-110 transition-all active:scale-95 group/btn">
                                 <i class="fa-solid fa-heart ${colorCorazon} transition-colors duration-300 icono-corazon"></i>
                                 <span class="text-xs font-bold text-gray-700 contador-likes">${likesActuales}</span>
@@ -1302,6 +1307,30 @@
                     </div>
                 </div>
             `;
+                        } else {
+                            // Card compacta sin media
+                            html = `
+                <div class="relative animate-fade-in mb-6">
+                    <div class="absolute -left-12 top-0">
+                        <img src="${rango.imagen}" class="w-10 h-10 rounded-full border-2 border-white shadow-md" title="Nivel: ${rango.nivel}">
+                    </div>
+                    <div class="ml-2 bg-brand-light border border-brand-yellow/30 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-semibold text-brand-blue leading-snug">
+                                <span class="text-gray-800 font-normal">${nombreVoluntario}</span> realizó
+                            </p>
+                            <p class="text-sm text-gray-700 font-bold truncate">${item.tipo}</p>
+                            <p class="text-[10px] text-brand-red font-bold uppercase tracking-wider mt-0.5">+${item.puntos} Puntos Serios</p>
+                        </div>
+                        <button onclick="darLike(${item.id}, ${likesActuales}, this)"
+                                class="flex-shrink-0 flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full shadow hover:scale-110 transition-all active:scale-95 border border-gray-100">
+                            <i class="fa-solid fa-heart ${colorCorazon} transition-colors duration-300 icono-corazon text-sm"></i>
+                            <span class="text-xs font-bold text-gray-700 contador-likes">${likesActuales}</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+                        }
                         feed.insertAdjacentHTML('beforeend', html);
                     });
 
