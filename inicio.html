@@ -1937,6 +1937,8 @@
 
 
 
+        let eventosAdminCache = {};
+
         async function cargarEventosAdmin() {
             const contenedor = document.getElementById('admin-contenido');
             contenedor.innerHTML = '<div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin"></i> Cargando eventos...</div>';
@@ -1953,8 +1955,9 @@
 
             let html = `
         <div class="bg-white rounded-xl p-4 shadow">
-            <h3 class="font-bold text-brand-blue mb-3">Agregar nuevo evento</h3>
-            <form id="form-evento" class="space-y-3" onsubmit="crearEvento(event)">
+            <h3 id="form-evento-titulo" class="font-bold text-brand-blue mb-3">Agregar nuevo evento</h3>
+            <form id="form-evento" class="space-y-3" onsubmit="manejarSubmitEvento(event)">
+                <input type="hidden" name="evento_id" id="evento_id_input">
                 <input type="text" name="titulo" placeholder="Título" required class="w-full p-2 border rounded-lg">
                 <input type="text" name="fecha" placeholder="Fecha (ej: Domingo 22 de Marzo)" required class="w-full p-2 border rounded-lg">
                 <input type="text" name="hora" placeholder="Hora (ej: 10:00 AM)" class="w-full p-2 border rounded-lg">
@@ -1962,13 +1965,16 @@
                 <textarea name="descripcion" placeholder="Descripción" rows="2" class="w-full p-2 border rounded-lg"></textarea>
                 <input type="text" name="mapa" placeholder="Enlace de Google Maps (iframe src)" class="w-full p-2 border rounded-lg">
                 <input type="text" name="enlace_virtual" placeholder="Enlace Zoom/Meet (opcional)" class="w-full p-2 border rounded-lg">
-                <button type="submit" class="bg-brand-blue text-white px-4 py-2 rounded-full text-sm">Guardar Evento</button>
+                <button type="submit" id="submit_evento_btn" class="bg-brand-blue text-white px-4 py-2 rounded-full text-sm">Guardar Evento</button>
+                <button type="button" id="cancelar_edicion_btn" onclick="cancelarEdicion()" class="hidden bg-gray-500 text-white px-4 py-2 rounded-full text-sm ml-2">Cancelar</button>
             </form>
         </div>
     `;
 
+            eventosAdminCache = {};
             html += `<div class="space-y-3 mt-6">`;
             eventos.forEach(ev => {
+                eventosAdminCache[ev.id] = ev;
                 html += `
             <div class="bg-white p-3 rounded-xl border flex justify-between items-center">
                 <div>
@@ -1986,9 +1992,41 @@
             contenedor.innerHTML = html;
         }
 
-        async function crearEvento(e) {
+        function editarEvento(id) {
+            const evento = eventosAdminCache[id];
+            if (!evento) return;
+
+            const form = document.getElementById('form-evento');
+            form.evento_id.value = evento.id;
+            form.titulo.value = evento.titulo || '';
+            form.fecha.value = evento.fecha || '';
+            form.hora.value = evento.hora || '';
+            form.direccion.value = evento.direccion || '';
+            form.descripcion.value = evento.descripcion || '';
+            form.mapa.value = evento.mapa || '';
+            form.enlace_virtual.value = evento.enlace_virtual || '';
+
+            document.getElementById('form-evento-titulo').innerText = 'Editar evento';
+            document.getElementById('submit_evento_btn').innerText = 'Actualizar evento';
+            document.getElementById('cancelar_edicion_btn').classList.remove('hidden');
+
+            form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function cancelarEdicion() {
+            const form = document.getElementById('form-evento');
+            form.reset();
+            form.evento_id.value = '';
+            document.getElementById('form-evento-titulo').innerText = 'Agregar nuevo evento';
+            document.getElementById('submit_evento_btn').innerText = 'Guardar Evento';
+            document.getElementById('cancelar_edicion_btn').classList.add('hidden');
+        }
+
+        async function manejarSubmitEvento(e) {
             e.preventDefault();
             const form = e.target;
+            const eventoId = form.evento_id.value;
+
             const datos = {
                 titulo: form.titulo.value,
                 fecha: form.fecha.value,
@@ -1998,11 +2036,25 @@
                 mapa: form.mapa.value,
                 enlace_virtual: form.enlace_virtual.value
             };
-            const { error } = await supabaseApp.from('eventos').insert(datos);
-            if (error) alert('Error: ' + error.message);
-            else {
-                alert('Evento creado');
-                mostrarAdminSeccion('eventos');
+
+            if (eventoId) {
+                // Modo Edición
+                const { error } = await supabaseApp.from('eventos').update(datos).eq('id', eventoId);
+                if (error) alert('Error: ' + error.message);
+                else {
+                    alert('Evento actualizado');
+                    cancelarEdicion();
+                    mostrarAdminSeccion('eventos');
+                }
+            } else {
+                // Modo Creación
+                const { error } = await supabaseApp.from('eventos').insert(datos);
+                if (error) alert('Error: ' + error.message);
+                else {
+                    alert('Evento creado');
+                    cancelarEdicion();
+                    mostrarAdminSeccion('eventos');
+                }
             }
         }
 
