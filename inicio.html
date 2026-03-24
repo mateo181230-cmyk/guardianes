@@ -125,7 +125,38 @@
             const codigoCorto = perfil.id.substring(0, 4) + perfil.id.substring(perfil.id.length - 4);
             document.getElementById('codigo_vol').innerText = codigoCorto;
 
+            // ACTUALIZAR BARRA DE EXPERIENCIA (Gamificación)
+            const barraExp = document.getElementById('barra-experiencia');
+            const ptsActualesSpan = document.getElementById('puntos-actuales-bar');
+            const ptsMetaSpan = document.getElementById('puntos-meta-bar');
+            const rangoSigSpan = document.getElementById('rango-siguiente');
+            
+            if(barraExp && ptsActualesSpan && ptsMetaSpan && rangoSigSpan && rango.maxPuntos) {
+                ptsActualesSpan.innerText = puntosActuales;
+                ptsMetaSpan.innerText = rango.maxPuntos;
+                
+                if (rango.nivel === "Roble") {
+                    rangoSigSpan.innerText = "Máximo";
+                } else {
+                    rangoSigSpan.innerText = rango.siguienteNivel;
+                }
+                
+                // Calcular porcentaje (0 a 100) del nivel actual
+                const ptsRango = Math.max(0, puntosActuales - rango.minPuntos);
+                const metaRango = rango.maxPuntos - rango.minPuntos;
+                
+                let pct = 100;
+                if (metaRango > 0) {
+                    pct = Math.max(0, Math.min(100, (ptsRango / metaRango) * 100));
+                }
+                
+                // Actualizar barra con una pequeña animación (delay para que se vea el llenado al cargar)
+                setTimeout(() => {
+                    barraExp.style.width = pct + '%';
+                }, 300);
+            }
         }
+
 
         async function obtenerDatosUsuario() {
             const { data: { user } } = await supabaseApp.auth.getUser();
@@ -1163,17 +1194,26 @@
                     if (pts <= 50) {
                         return {
                             nivel: "Semilla",
-                            imagen: "https://img.freepik.com/vector-gratis/lindo-caballero-armadura-acero-espada-icono-vectorial-dibujos-animados-ilustracion-gente-vacaciones-aislado-plano_138676-14664.jpg?semt=ais_hybrid&w=740&q=80"
+                            imagen: "https://img.freepik.com/vector-gratis/lindo-caballero-armadura-acero-espada-icono-vectorial-dibujos-animados-ilustracion-gente-vacaciones-aislado-plano_138676-14664.jpg?semt=ais_hybrid&w=740&q=80",
+                            minPuntos: 0,
+                            maxPuntos: 50,
+                            siguienteNivel: "Raíz"
                         };
                     } else if (pts <= 150) {
                         return {
-                            nivel: "Raiz",
-                            imagen: "https://img.freepik.com/vector-premium/diseno-personajes-dibujos-animados-profesionales-ilustracion-vectorial-hermosa_1253044-17168.jpg?semt=ais_hybrid&w=740&q=80"
+                            nivel: "Raíz",
+                            imagen: "https://img.freepik.com/vector-premium/diseno-personajes-dibujos-animados-profesionales-ilustracion-vectorial-hermosa_1253044-17168.jpg?semt=ais_hybrid&w=740&q=80",
+                            minPuntos: 51,
+                            maxPuntos: 150,
+                            siguienteNivel: "Roble"
                         };
                     } else {
                         return {
                             nivel: "Roble",
-                            imagen: "https://img.freepik.com/vector-premium/diseno-personajes-dibujos-animados-profesionales-ilustracion-vectorial-hermosa_1253044-11195.jpg?semt=ais_hybrid&w=740&q=80"
+                            imagen: "https://img.freepik.com/vector-premium/diseno-personajes-dibujos-animados-profesionales-ilustracion-vectorial-hermosa_1253044-11195.jpg?semt=ais_hybrid&w=740&q=80",
+                            minPuntos: 151,
+                            maxPuntos: 500,
+                            siguienteNivel: "Nivel Máximo"
                         };
                     }
                 }
@@ -1765,6 +1805,35 @@
 
                     <h3 id="user-nombre" class="font-bold text-lg text-gray-900 mt-4">Juan Perez</h3>
                     <p class="text-xs text-brand-red font-semibold">Guardianes <span id="user-depto1"></span></p>
+
+                    <!-- Barra de Experiencia (Gamificación) -->
+                    <div class="w-full mt-5 bg-brand-light p-4 rounded-xl border border-brand-yellow/30 shadow-inner">
+                        <div class="flex justify-between items-end mb-2">
+                            <div>
+                                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Progreso al nivel <span id="rango-siguiente" class="text-brand-blue">Raíz</span></p>
+                                <p class="text-lg font-black text-brand-blue leading-none mt-1">
+                                    <span id="puntos-actuales-bar">0</span><span class="text-xs text-gray-400 font-medium"> / <span id="puntos-meta-bar">50</span> pts</span>
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <i class="fa-solid fa-gift text-brand-red text-xl animate-bounce"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- Barra visual -->
+                        <div class="w-full bg-gray-200 rounded-full h-3 mb-3 overflow-hidden shadow-inner relative">
+                            <div id="barra-experiencia" class="bg-gradient-to-r from-brand-yellow to-brand-red h-full rounded-full transition-all duration-1000 ease-out relative" style="width: 0%">
+                                <!-- Brillo de la barra -->
+                                <div class="absolute top-0 left-0 right-0 bottom-0 bg-white/20 rounded-full"></div>
+                            </div>
+                        </div>
+                        
+                        <p class="text-[10px] text-gray-600 text-center flex items-center justify-center gap-1.5 font-medium">
+                            <i class="fa-solid fa-circle-exclamation text-brand-yellow"></i>
+                            <span>¡Sube de nivel para reclamar <strong class="text-brand-red">merch oficial</strong>!</span>
+                        </p>
+                    </div>
+
                     <div class="grid grid-cols-2 gap-x-8 gap-y-4 mt-6 text-sm w-full border-t border-gray-100 pt-6">
                         <div>
                             <p class="text-xs text-gray-400 font-medium">Departamento</p>
