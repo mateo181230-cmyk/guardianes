@@ -849,7 +849,7 @@
                             mes = palabrasFecha[3].substring(0, 3);
                         }
 
-                        const direccionCorta = evento.direccion ? evento.direccion.split(',')[0] : 'Ubicación por definir';
+                        const direccionCorta = evento.info_pendiente ? 'Información por confirmar' : (evento.direccion ? evento.direccion.split(',')[0] : 'Ubicación por definir');
 
                         // 5. NUEVO: Decidimos qué botón mostrar basándonos en si el ID del evento está en 'misEventosRegistrados'
                         let botonHTML = '';
@@ -894,9 +894,14 @@
 
                     document.getElementById('detallesTitulo').innerText = data.titulo || '';
                     document.getElementById('detallesFecha').innerText = data.fecha || '';
-                    document.getElementById('detallesHora').innerText = data.hora || '';
-                    document.getElementById('detallesDireccion').innerText = data.direccion || '';
-                    document.getElementById('detallesDescripcion').innerText = data.descripcion || '';
+                    document.getElementById('detallesHora').innerText = data.info_pendiente ? 'Por confirmar' : (data.hora || '');
+                    document.getElementById('detallesDireccion').innerText = data.info_pendiente ? 'Lugar por confirmar' : (data.direccion || '');
+
+                    if (data.info_pendiente) {
+                        document.getElementById('detallesDescripcion').innerHTML = '<span class="text-brand-yellow font-bold"><i class="fa-solid fa-clock mr-1"></i> Información pendiente de confirmación. Actualizaremos los detalles a la mayor brevedad posible.</span>' + (data.descripcion ? '<br><br>' + data.descripcion : '');
+                    } else {
+                        document.getElementById('detallesDescripcion').innerText = data.descripcion || '';
+                    }
 
                     // Manejar el enlace virtual
                     const filaEnlace = document.getElementById('filaEnlace');
@@ -1965,6 +1970,10 @@
                 <textarea name="descripcion" placeholder="Descripción" rows="2" class="w-full p-2 border rounded-lg"></textarea>
                 <input type="text" name="mapa" placeholder="Enlace de Google Maps (iframe src)" class="w-full p-2 border rounded-lg">
                 <input type="text" name="enlace_virtual" placeholder="Enlace Zoom/Meet (opcional)" class="w-full p-2 border rounded-lg">
+                <label class="flex items-center space-x-2 text-sm text-gray-700 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                    <input type="checkbox" name="info_pendiente" class="rounded text-brand-blue focus:ring-brand-blue">
+                    <span>Marcar como: Información pendiente de confirmación</span>
+                </label>
                 <button type="submit" id="submit_evento_btn" class="bg-brand-blue text-white px-4 py-2 rounded-full text-sm">Guardar Evento</button>
                 <button type="button" id="cancelar_edicion_btn" onclick="cancelarEdicion()" class="hidden bg-gray-500 text-white px-4 py-2 rounded-full text-sm ml-2">Cancelar</button>
             </form>
@@ -2005,6 +2014,7 @@
             form.descripcion.value = evento.descripcion || '';
             form.mapa.value = evento.mapa || '';
             form.enlace_virtual.value = evento.enlace_virtual || '';
+            form.info_pendiente.checked = evento.info_pendiente || false;
 
             document.getElementById('form-evento-titulo').innerText = 'Editar evento';
             document.getElementById('submit_evento_btn').innerText = 'Actualizar evento';
@@ -2034,7 +2044,8 @@
                 direccion: form.direccion.value,
                 descripcion: form.descripcion.value,
                 mapa: form.mapa.value,
-                enlace_virtual: form.enlace_virtual.value
+                enlace_virtual: form.enlace_virtual.value,
+                info_pendiente: form.info_pendiente.checked
             };
 
             if (eventoId) {
